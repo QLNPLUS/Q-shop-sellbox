@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "qshop_sellbox:block/sell_box" }
+  }
+}

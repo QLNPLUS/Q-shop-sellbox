@@ -1,0 +1,18 @@
+.gradle/
+build/
+run/
+out/
+.idea/
+*.iml
+*.ipr
+*.iws
+config/
+logs/
+crash-reports/
+src/generated/
+*.class
+
+# Decompiled or unpacked build artifacts left at the project root.
+/com/
+/data/
+/META-INF/

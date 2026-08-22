@@ -1,0 +1,32 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="All Rights Reserved"
+showAsResourcePack=false
+
+[[mods]]
+modId="qshop_sellbox"
+version="${version}"
+displayName="QShop Sell Box"
+authors="QShop"
+description='''A QShop addon that automatically sells items stored in a container.'''
+
+[[dependencies.qshop_sellbox]]
+modId="forge"
+mandatory=true
+versionRange="[47.0,48)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.qshop_sellbox]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.20.1,1.21)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.qshop_sellbox]]
+modId="qshop"
+mandatory=true
+versionRange="[1.1.0,2.0)"
+ordering="AFTER"
+side="BOTH"
