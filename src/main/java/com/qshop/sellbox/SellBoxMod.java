@@ -6,6 +6,9 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import net.minecraft.core.registries.Registries;
 import net.minecraftforge.network.IContainerFactory;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -35,8 +38,11 @@ public final class SellBoxMod {
 
     public static final RegistryObject<Block> SELL_BOX = BLOCKS.register("sell_box",
             () -> new SellBoxBlock(Block.Properties.of()
+                    .mapColor(MapColor.WOOD)
+                    .instrument(NoteBlockInstrument.BASS)
                     .strength(2.5F)
-                    .requiresCorrectToolForDrops()));
+                    .sound(SoundType.WOOD)
+                    .ignitedByLava()));
     public static final RegistryObject<Item> SELL_BOX_ITEM = ITEMS.register("sell_box",
             () -> new BlockItem(SELL_BOX.get(), new Item.Properties()));
     public static final RegistryObject<BlockEntityType<SellBoxBlockEntity>> SELL_BOX_ENTITY =

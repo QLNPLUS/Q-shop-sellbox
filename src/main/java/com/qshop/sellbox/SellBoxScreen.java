@@ -1,6 +1,7 @@
 package com.qshop.sellbox;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.qshop.sellbox.client.SellBoxEmiCompat;
 import com.qshop.sellbox.client.SellBoxLayoutDebug;
 import com.qshop.sellbox.client.SellBoxTextures;
 import net.minecraft.client.Minecraft;
@@ -143,6 +144,7 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        SellBoxEmiCompat.setSettingsSuppressed(tab == 1);
         syncIntervalInputPosition();
         renderBackground(graphics);
         if (tab == 0) {
@@ -430,6 +432,7 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
     private void setTab(int nextTab) {
         tab = nextTab;
         dropdown = false;
+        SellBoxEmiCompat.setSettingsSuppressed(nextTab == 1);
         SellBoxLayoutDebug.ensureSelected(tab);
         if (intervalInput != null) {
             intervalInput.setVisible(nextTab == 1);
@@ -685,6 +688,7 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
     @Override
     public void removed() {
         commitSettings();
+        SellBoxEmiCompat.restore();
         super.removed();
     }
 

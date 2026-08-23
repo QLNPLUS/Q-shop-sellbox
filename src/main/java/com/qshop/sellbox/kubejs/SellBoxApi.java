@@ -75,7 +75,9 @@ public final class SellBoxApi {
         Context context = Context.enter();
         try {
             Scriptable scope = function.getParentScope();
-            Object event = Context.javaToJS(context, new SellBoxPriceEvent(stack), scope);
+            SellBoxPriceEvent priceEvent = new SellBoxPriceEvent(stack, context);
+            Object event = Context.javaToJS(context, priceEvent, scope);
+            debugInput(context, event, stack);
             Object result = function.call(context, scope, scope, new Object[]{event});
             result = Wrapper.unwrapped(result);
 
@@ -105,12 +107,51 @@ public final class SellBoxApi {
             if (!Double.isFinite(price) || price <= 0) return null;
             String resolvedCurrency = resolvedCurrencyId == null || resolvedCurrencyId.isBlank()
                     ? SellBoxConfig.defaultCurrency() : resolvedCurrencyId;
+            debugResult(result, price, resolvedCurrency);
             return new PriceQuote(price, resolvedCurrency);
         } catch (Throwable error) {
             System.err.println("[QShop SellBox] Dynamic KubeJS price function failed: "
                     + error.getMessage());
             return null;
         }
+    }
+
+    private static void debugInput(Context context, Object event, ItemStack stack) {
+        if (!SellBoxConfig.debugDynamicPrice()) return;
+        Object item = "<unavailable>";
+        Object nbt = "<unavailable>";
+        Object rarity = "<unavailable>";
+        Object damage = "<unavailable>";
+        if (event instanceof Scriptable eventObject) {
+            item = ScriptableObject.getProperty(eventObject, "item", context);
+            if (item instanceof Scriptable itemObject) {
+                nbt = ScriptableObject.getProperty(itemObject, "nbt", context);
+                if (nbt instanceof Scriptable nbtObject) {
+                    rarity = ScriptableObject.getProperty(nbtObject, "rarity", context);
+                    damage = ScriptableObject.getProperty(nbtObject, "Damage", context);
+                }
+            }
+        }
+        System.out.println("[QShop SellBox] Dynamic price debug input: id="
+                + stack.getItem() + ", tag=" + (stack.getTag() == null ? "<none>" : stack.getTag())
+                + ", itemJsType=" + typeName(item)
+                + ", nbtJsType=" + typeName(nbt)
+                + ", rarity=" + value(rarity)
+                + ", Damage=" + value(damage));
+    }
+
+    private static void debugResult(Object result, double price, String currency) {
+        if (!SellBoxConfig.debugDynamicPrice()) return;
+        System.out.println("[QShop SellBox] Dynamic price debug result: scriptResult="
+                + value(result) + ", price=" + price + ", currency=" + currency);
+    }
+
+    private static String typeName(Object value) {
+        return value == null ? "null" : value.getClass().getName();
+    }
+
+    private static String value(Object value) {
+        return value == null || value == Context.getUndefinedValue() ? "<undefined>" : String.valueOf(value);
     }
 
     private static net.minecraft.nbt.CompoundTag parse(String itemId, Object nbt) {

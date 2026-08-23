@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'com.qshop'
-version = '1.0.0'
+version = '1.0.1'
 base { archivesName = 'qshop-sellbox' }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
@@ -49,7 +49,17 @@ dependencies {
     runtimeOnly fg.deobf('net.fabricmc:intermediary:1.20.1')
 }
 
+configurations {
+    testCompileOnly.extendsFrom compileOnly
+}
+
 tasks.withType(JavaCompile).configureEach { it.options.encoding = 'UTF-8' }
+
+tasks.register('smokeTest', JavaExec) {
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.qshop.sellbox.kubejs.SellBoxNbtSmokeTest'
+}
 
 processResources {
     inputs.property 'version', project.version

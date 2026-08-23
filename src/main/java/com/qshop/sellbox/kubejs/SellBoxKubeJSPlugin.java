@@ -17,5 +17,6 @@ public final class SellBoxKubeJSPlugin extends KubeJSPlugin {
         filter.allow("com.qshop.sellbox.kubejs.SellBoxApi");
         filter.allow("com.qshop.sellbox.kubejs.PriceBuilder");
         filter.allow("com.qshop.sellbox.kubejs.SellBoxPriceEvent");
+        filter.allow("com.qshop.sellbox.kubejs.SellBoxItemView");
     }
 }

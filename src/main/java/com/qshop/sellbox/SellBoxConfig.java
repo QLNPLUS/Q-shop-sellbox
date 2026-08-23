@@ -25,6 +25,9 @@ public final class SellBoxConfig {
     public static final ForgeConfigSpec.BooleanValue ENABLE_LAYOUT_DEBUG = BUILDER
             .comment("DEBUG ONLY. Enables the F8 GUI layout editor. Disabled by default.")
             .define("enableLayoutDebug", false);
+    public static final ForgeConfigSpec.BooleanValue DEBUG_DYNAMIC_PRICE = BUILDER
+            .comment("DEBUG ONLY. Logs the item, NBT and result of every dynamic KubeJS price call.")
+            .define("debugDynamicPrice", false);
     public static final ForgeConfigSpec SPEC = BUILDER.build();
 
     private static List<PriceRule> cachedRules = List.of();
@@ -53,6 +56,10 @@ public final class SellBoxConfig {
 
     public static boolean layoutDebugEnabled() {
         return ENABLE_LAYOUT_DEBUG.get();
+    }
+
+    public static boolean debugDynamicPrice() {
+        return DEBUG_DYNAMIC_PRICE.get();
     }
 
     private static void parsePriceRule(String raw, List<PriceRule> rules) {

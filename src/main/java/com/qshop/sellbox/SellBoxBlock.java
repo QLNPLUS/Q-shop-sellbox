@@ -80,8 +80,11 @@ public final class SellBoxBlock extends BaseEntityBlock {
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
         if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof SellBoxBlockEntity box) {
             for (int slot = 0; slot < box.items().getSlots(); slot++) {
-                net.minecraft.world.Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(),
-                        box.items().extractItem(slot, box.items().getStackInSlot(slot).getCount(), false));
+                net.minecraft.world.item.ItemStack stack = box.items().getStackInSlot(slot);
+                if (!stack.isEmpty()) {
+                    net.minecraft.world.Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(),
+                            box.items().extractItem(slot, stack.getCount(), false));
+                }
             }
             level.removeBlockEntity(pos);
         }

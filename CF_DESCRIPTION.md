@@ -1,12 +1,14 @@
 # QShop Sell Box
 
+Addon for [QShop](https://www.curseforge.com/minecraft/mc-mods/q-shop).
+
 ## Short Description
 
 An automatic selling container addon for QShop that sells stored items on a schedule or when its GUI closes and pays the configured owner.
 
 ## Full Description
 
-QShop Sell Box is a Forge 1.20.1 addon for QShop that provides an automatic sell box container.
+QShop Sell Box is a Forge 1.20.1 addon for [QShop](https://www.curseforge.com/minecraft/mc-mods/q-shop) that provides an automatic sell box container.
 Items placed inside the container can be sold on a timer or when the GUI is closed, with earnings
 paid to the configured owner through QShop's currency system.
 
@@ -31,7 +33,7 @@ paid to the configured owner through QShop's currency system.
 
 - Minecraft 1.20.1
 - Forge 47.x
-- QShop 1.1.0 or newer, before 2.0
+- [QShop 1.1.0 or newer, before 2.0](https://www.curseforge.com/minecraft/mc-mods/q-shop)
 - KubeJS is optional and only required for KubeJS price scripts.
 
 ## Configuration
@@ -89,6 +91,10 @@ SellBox.price(event => {
   }
 })
 ```
+
+`event.item` is a script-friendly item view with `id`, `count`, `damage`, `maxDamage`, and recursively converted `nbt` fields, including nested compounds and arrays.
+
+For troubleshooting, temporarily enable `debugDynamicPrice = true` in the common config to log the raw item NBT, the values exposed to the script, and the returned price.
 
 The callback runs on the server. Its returned `currency` value must be a currency ID registered by
 QShop. A dynamic price function takes priority over static configuration rules.
