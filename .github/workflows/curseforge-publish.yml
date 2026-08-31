@@ -110,7 +110,7 @@ jobs:
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           github-tag: ${{ env.RELEASE_VERSION }}
-          files: Q-shop-sellbox-neoforge-1.21.1/build/libs/qshop-sellbox-neoforge-1.21.1-*.jar
+          files: Q-shop-sellbox-neoforge-1.21.1/build/libs/qshop_sellbox-neoforge-1.21.1-*.jar
           version: ${{ env.CURSEFORGE_VERSION }}
           name: QShop Sell Box ${{ env.CURSEFORGE_VERSION }} NeoForge 1.21.1
           version-type: release
