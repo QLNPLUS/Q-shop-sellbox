@@ -2,6 +2,16 @@
 
 All notable changes to QShop Sell Box are documented here.
 
+## [1.1.1] - 2026-08-31
+
+### Added
+
+- Added a shaped crafting recipe using an iron ingot, a vanilla barrel, and an iron ingot.
+
+### Changed
+
+- Updated the Forge build to use the available QShop Forge 1.20.1 1.2.4 artifact.
+
 ## [1.0.1] - 2026-08-23
 
 ### Added

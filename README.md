@@ -1,6 +1,6 @@
 # QShop Sell Box
 
-QShop 1.1.0 的 Forge 1.20.1 附属模组。`qshop-sellbox-1.0.1.jar` 需要和 QShop 一起放入 `mods`。
+QShop 1.1.0 的 Forge 1.20.1 附属模组。`qshop-sellbox-forge-1.20.1-1.1.1.jar` 需要和 QShop 一起放入 `mods`。
 
 ## 功能
 

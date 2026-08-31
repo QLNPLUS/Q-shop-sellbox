@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'com.qshop'
-version = '1.0.1'
+version = '1.1.1'
 base { archivesName = 'qshop-sellbox-forge-1.20.1' }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
@@ -36,7 +36,7 @@ repositories {
 
 dependencies {
     minecraft 'net.minecraftforge:forge:1.20.1-47.4.20'
-    compileOnly fg.deobf(files('../Q-shop/build/libs/qshop-1.1.0.jar'))
+    compileOnly fg.deobf(files('../Q-shop/build/libs/qshop-forge-1.20.1-1.2.4.jar'))
 
     // Optional at runtime. The plugin is discovered only when KubeJS is installed.
     compileOnly fg.deobf('dev.latvian.mods:kubejs-forge:2001.6.5-build.14')
