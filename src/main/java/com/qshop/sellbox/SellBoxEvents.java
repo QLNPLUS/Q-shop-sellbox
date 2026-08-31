@@ -3,15 +3,15 @@ package com.qshop.sellbox;
 import com.qshop.api.QShopAddonApi;
 import com.qshop.currency.CurrencyRegistry;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.fml.event.config.ModConfigEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.server.ServerStartingEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.fml.event.config.ModConfigEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 import java.util.Map;
 
-@Mod.EventBusSubscriber(modid = SellBoxMod.MODID)
+@EventBusSubscriber(modid = SellBoxMod.MODID)
 public final class SellBoxEvents {
     private SellBoxEvents() {}
 
@@ -25,8 +25,8 @@ public final class SellBoxEvents {
     public static void onConfigReload(ModConfigEvent.Reloading event) {
         if (event.getConfig().getSpec() != SellBoxConfig.SPEC) return;
         SellBoxConfig.refresh();
-        if (net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer() != null) {
-            SellBoxNetwork.broadcastPrices(net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer());
+        if (net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer() != null) {
+            SellBoxNetwork.broadcastPrices(net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer());
         }
     }
 

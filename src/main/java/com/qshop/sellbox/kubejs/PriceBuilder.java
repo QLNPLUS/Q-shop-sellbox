@@ -7,6 +7,7 @@ import net.minecraft.nbt.CompoundTag;
 
 /** Fluent KubeJS price declaration. */
 public final class PriceBuilder {
+    private static final com.google.gson.Gson GSON = new com.google.gson.Gson();
     private final String itemId;
     private CompoundTag nbt = new CompoundTag();
     private double value;
@@ -34,7 +35,7 @@ public final class PriceBuilder {
         if (nbt != null && !(nbt instanceof String)
                 && !(nbt instanceof CompoundTag)
                 && !(nbt instanceof com.google.gson.JsonElement)) {
-            nbt = dev.latvian.mods.kubejs.util.JsonIO.of(nbt);
+            nbt = GSON.toJsonTree(nbt);
         }
         this.nbt = NbtStrings.parse(nbt);
         return this;
@@ -54,7 +55,7 @@ public final class PriceBuilder {
         if (value != null && !(value instanceof String)
                 && !(value instanceof CompoundTag)
                 && !(value instanceof com.google.gson.JsonElement)) {
-            value = dev.latvian.mods.kubejs.util.JsonIO.of(value);
+            value = GSON.toJsonTree(value);
         }
         if (value instanceof com.google.gson.JsonElement element) {
             object.add(key, element);

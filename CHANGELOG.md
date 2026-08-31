@@ -2,6 +2,35 @@
 
 All notable changes to QShop Sell Box are documented here.
 
+Release notes are grouped by Minecraft loader when a release supports both Forge and NeoForge.
+
+## [1.1.0] - 2026-08-28
+
+### NeoForge 1.21.1
+
+### Added
+
+- Added a Claim button that transfers sell box ownership to the player using the container.
+- Added server-side ownership synchronization for all players viewing the same sell box.
+- Bumped the network protocol for the updated ownership synchronization payload.
+
+### Changed
+
+- Replaced the owner player selection dropdown with direct ownership claiming.
+- Removed the need to synchronize a server-wide list of previously joined players for ownership selection.
+- Updated the layout debug label to identify the ownership Claim button.
+- Updated the local QShop compile dependency to the available QShop 1.2.3 artifact.
+
+### Forge 1.20.1
+
+- No Forge 1.20.1-specific change was included in this NeoForge workspace entry.
+
+## [1.0.2] - 2026-08-23
+
+### Added
+
+- Added `event.item.hasTag(tagId)` for KubeJS dynamic price callbacks.
+
 ## [1.0.1] - 2026-08-23
 
 ### Added

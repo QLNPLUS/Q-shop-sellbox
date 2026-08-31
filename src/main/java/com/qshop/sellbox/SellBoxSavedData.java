@@ -1,5 +1,6 @@
 package com.qshop.sellbox;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -17,13 +18,15 @@ public final class SellBoxSavedData extends SavedData {
     private final Map<UUID, PlayerRecord> players = new LinkedHashMap<>();
     private final Map<UUID, Map<String, Double>> pending = new LinkedHashMap<>();
     private final Map<UUID, NotificationFlags> pendingNotifications = new LinkedHashMap<>();
+    private static final Factory<SellBoxSavedData> FACTORY = new Factory<>(
+            SellBoxSavedData::new, SellBoxSavedData::load);
 
     public static SellBoxSavedData get(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(
-                SellBoxSavedData::load, SellBoxSavedData::new, DATA_ID);
+                FACTORY, DATA_ID);
     }
 
-    public static SellBoxSavedData load(CompoundTag tag) {
+    public static SellBoxSavedData load(CompoundTag tag, HolderLookup.Provider registries) {
         SellBoxSavedData data = new SellBoxSavedData();
         ListTag playerList = tag.getList("players", Tag.TAG_COMPOUND);
         for (Tag raw : playerList) {
@@ -83,7 +86,7 @@ public final class SellBoxSavedData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         ListTag playerList = new ListTag();
         for (PlayerRecord player : players.values()) {
             CompoundTag entry = new CompoundTag();

@@ -1,34 +1,34 @@
 package com.qshop.sellbox;
 
 import net.minecraft.nbt.CompoundTag;
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /** Forge COMMON config stored at config/qshop_sellbox-common.toml. */
 public final class SellBoxConfig {
-    private static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
+    private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
 
-    public static final ForgeConfigSpec.ConfigValue<String> DEFAULT_CURRENCY = BUILDER
+    public static final ModConfigSpec.ConfigValue<String> DEFAULT_CURRENCY = BUILDER
             .comment("Currency used when a price rule does not specify one.")
             .define("defaultCurrency", "coins", value -> value instanceof String s && !s.isBlank());
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> PRICE_RULES = BUILDER
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> PRICE_RULES = BUILDER
             .comment("item|price|currency[|nbt], for example minecraft:diamond|100|coins")
             .defineList("priceRules", List.of(), value -> value instanceof String s && !s.isBlank());
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> NBT_MULTIPLIERS = BUILDER
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> NBT_MULTIPLIERS = BUILDER
             .comment("nbt|multiplier applies to every item; item|nbt|multiplier targets one item")
             .defineList("nbtMultipliers", List.of(), value -> value instanceof String s && !s.isBlank());
-    public static final ForgeConfigSpec.BooleanValue SHOW_PRICE_TOOLTIP = BUILDER
+    public static final ModConfigSpec.BooleanValue SHOW_PRICE_TOOLTIP = BUILDER
             .comment("Whether item tooltips show the configured sell price.")
             .define("showPriceTooltip", true);
-    public static final ForgeConfigSpec.BooleanValue ENABLE_LAYOUT_DEBUG = BUILDER
+    public static final ModConfigSpec.BooleanValue ENABLE_LAYOUT_DEBUG = BUILDER
             .comment("DEBUG ONLY. Enables the F8 GUI layout editor. Disabled by default.")
             .define("enableLayoutDebug", false);
-    public static final ForgeConfigSpec.BooleanValue DEBUG_DYNAMIC_PRICE = BUILDER
+    public static final ModConfigSpec.BooleanValue DEBUG_DYNAMIC_PRICE = BUILDER
             .comment("DEBUG ONLY. Logs the item, NBT and result of every dynamic KubeJS price call.")
             .define("debugDynamicPrice", false);
-    public static final ForgeConfigSpec SPEC = BUILDER.build();
+    public static final ModConfigSpec SPEC = BUILDER.build();
 
     private static List<PriceRule> cachedRules = List.of();
 

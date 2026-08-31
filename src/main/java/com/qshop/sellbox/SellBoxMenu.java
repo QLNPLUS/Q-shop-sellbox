@@ -7,11 +7,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.SlotItemHandler;
+import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.SlotItemHandler;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 public final class SellBoxMenu extends AbstractContainerMenu {
@@ -23,7 +21,6 @@ public final class SellBoxMenu extends AbstractContainerMenu {
     private int saleIntervalTicks = 1200;
     private boolean showActionBarNotification = true;
     private boolean showChatNotification = true;
-    private List<PlayerChoice> playerChoices = List.of();
 
     public SellBoxMenu(int id, Inventory inventory, FriendlyByteBuf data) {
         this(id, inventory, readClientData(inventory, data));
@@ -34,7 +31,7 @@ public final class SellBoxMenu extends AbstractContainerMenu {
         if (inventory.player.level().getBlockEntity(pos) instanceof SellBoxBlockEntity box) {
             return new ClientData(pos, box.items());
         }
-        return new ClientData(pos, new net.minecraftforge.items.ItemStackHandler(27));
+        return new ClientData(pos, new net.neoforged.neoforge.items.ItemStackHandler(27));
     }
 
     private SellBoxMenu(int id, Inventory inventory, ClientData data) {
@@ -79,12 +76,9 @@ public final class SellBoxMenu extends AbstractContainerMenu {
     public int saleIntervalTicks() { return saleIntervalTicks; }
     public boolean showActionBarNotification() { return showActionBarNotification; }
     public boolean showChatNotification() { return showChatNotification; }
-    public List<PlayerChoice> playerChoices() { return playerChoices; }
-
-    public void setOwnerData(UUID owner, String ownerName, List<PlayerChoice> choices) {
+    public void setOwnerData(UUID owner, String ownerName) {
         this.owner = owner;
         this.ownerName = ownerName == null ? "" : ownerName;
-        this.playerChoices = List.copyOf(new ArrayList<>(choices));
     }
 
     public void setSettingsData(SellMode mode, int intervalTicks,
@@ -127,6 +121,5 @@ public final class SellBoxMenu extends AbstractContainerMenu {
         super.removed(player);
     }
 
-    public record PlayerChoice(UUID uuid, String name) {}
     private record ClientData(BlockPos pos, IItemHandler handler) {}
 }

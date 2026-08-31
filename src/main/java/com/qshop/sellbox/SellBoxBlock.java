@@ -1,5 +1,6 @@
 package com.qshop.sellbox;
 
+import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -19,13 +20,17 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraftforge.network.NetworkHooks;
 
 import javax.annotation.Nullable;
 
 public final class SellBoxBlock extends BaseEntityBlock {
     public SellBoxBlock(BlockBehaviour.Properties properties) {
         super(properties);
+    }
+
+    @Override
+    protected MapCodec<? extends BaseEntityBlock> codec() {
+        return simpleCodec(SellBoxBlock::new);
     }
 
     @Override
@@ -47,11 +52,11 @@ public final class SellBoxBlock extends BaseEntityBlock {
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player,
-                                 InteractionHand hand, BlockHitResult hit) {
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos,
+                                               Player player, BlockHitResult hit) {
         if (!(player instanceof ServerPlayer serverPlayer)) return InteractionResult.SUCCESS;
         if (level.getBlockEntity(pos) instanceof SellBoxBlockEntity box) {
-            NetworkHooks.openScreen(serverPlayer, new net.minecraft.world.MenuProvider() {
+            serverPlayer.openMenu(new net.minecraft.world.MenuProvider() {
                 @Override
                 public Component getDisplayName() {
                     return Component.translatable("container.qshop_sellbox.sell_box");
@@ -67,6 +72,14 @@ public final class SellBoxBlock extends BaseEntityBlock {
             SellBoxNetwork.sendPrices(serverPlayer);
         }
         return InteractionResult.CONSUME;
+    }
+
+    @Override
+    protected net.minecraft.world.ItemInteractionResult useItemOn(
+            net.minecraft.world.item.ItemStack stack, BlockState state, Level level, BlockPos pos,
+            Player player, InteractionHand hand, BlockHitResult hit) {
+        useWithoutItem(state, level, pos, player, hit);
+        return net.minecraft.world.ItemInteractionResult.sidedSuccess(level.isClientSide);
     }
 
     @Override

@@ -6,6 +6,7 @@
   "qshop_sellbox.tab.owner": "Owner",
   "qshop_sellbox.owner": "Owner",
   "qshop_sellbox.owner.none": "Unassigned",
+  "qshop_sellbox.owner.claim": "Claim",
   "qshop_sellbox.owner.choose": "Choose player",
   "qshop_sellbox.owner.dropdown": "Choose owner",
   "qshop_sellbox.owner.uuid": "Player UUID: %s",

@@ -6,23 +6,23 @@ import com.qshop.sellbox.SellBoxPrices;
 import com.qshop.sellbox.SellBoxScreen;
 import com.qshop.sellbox.PriceQuote;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.MenuScreens;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
-import net.minecraftforge.event.entity.player.ItemTooltipEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-@Mod.EventBusSubscriber(modid = SellBoxMod.MODID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = SellBoxMod.MODID, value = Dist.CLIENT)
 public final class SellBoxClient {
     private static boolean showPriceTooltip = true;
     private static boolean hasDynamicPriceFunction;
@@ -34,15 +34,15 @@ public final class SellBoxClient {
 
     private SellBoxClient() {}
 
-    public static void onClientSetup(FMLClientSetupEvent event) {
-        event.enqueueWork(() -> MenuScreens.register(SellBoxMod.SELL_BOX_MENU.get(), SellBoxScreen::new));
+    public static void registerMenuScreens(RegisterMenuScreensEvent event) {
+        event.register(SellBoxMod.SELL_BOX_MENU.get(), SellBoxScreen::new);
     }
 
     public static void applyOwners(SellBoxNetwork.SyncOwnersPacket packet) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.screen instanceof SellBoxScreen screen
                 && screen.getMenu().pos().equals(packet.pos())) {
-            screen.getMenu().setOwnerData(packet.owner(), packet.ownerName(), packet.choices());
+            screen.getMenu().setOwnerData(packet.owner(), packet.ownerName());
             screen.getMenu().setSettingsData(packet.sellMode(), packet.saleIntervalTicks(),
                     packet.showActionBarNotification(), packet.showChatNotification());
             screen.refreshIntervalInput();
@@ -116,7 +116,7 @@ public final class SellBoxClient {
     }
 
     private static String priceKey(ItemStack stack) {
-        return stack.save(new CompoundTag()).toString();
+        return stack.save(RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY)).toString();
     }
 
     @SubscribeEvent

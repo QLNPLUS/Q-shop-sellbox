@@ -1,5 +1,6 @@
 package com.qshop.sellbox;
 
+import com.qshop.util.ItemStackData;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 
@@ -43,7 +44,7 @@ public final class PriceRule {
         if (!"*".equals(itemId) && !itemId.equals(actualId)) {
             return false;
         }
-        return NbtMatcher.matches(stack.getTag(), nbt);
+        return NbtMatcher.matches(ItemStackData.getCustomTag(stack), nbt);
     }
 
     public String key() {

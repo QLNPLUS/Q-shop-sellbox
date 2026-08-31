@@ -2,55 +2,53 @@ package com.qshop.sellbox;
 
 import com.qshop.currency.CurrencyRegistry;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.simple.SimpleChannel;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Supplier;
 
 public final class SellBoxNetwork {
-    private static final String PROTOCOL = "2";
-    private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
-            ResourceLocation.fromNamespaceAndPath(SellBoxMod.MODID, "main"),
-            () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
-    private static int packetId;
+    private static final String PROTOCOL = "3";
 
     private SellBoxNetwork() {}
 
-    public static void init() {
-        CHANNEL.registerMessage(packetId++, SyncOwnersPacket.class,
-                SyncOwnersPacket::encode, SyncOwnersPacket::decode, SyncOwnersPacket::handle);
-        CHANNEL.registerMessage(packetId++, SetOwnerPacket.class,
-                SetOwnerPacket::encode, SetOwnerPacket::decode, SetOwnerPacket::handle);
-        CHANNEL.registerMessage(packetId++, SetSettingsPacket.class,
-                SetSettingsPacket::encode, SetSettingsPacket::decode, SetSettingsPacket::handle);
-        CHANNEL.registerMessage(packetId++, SyncPricesPacket.class,
-                SyncPricesPacket::encode, SyncPricesPacket::decode, SyncPricesPacket::handle);
-        CHANNEL.registerMessage(packetId++, QueryPricePacket.class,
-                QueryPricePacket::encode, QueryPricePacket::decode, QueryPricePacket::handle);
-        CHANNEL.registerMessage(packetId++, PriceResultPacket.class,
-                PriceResultPacket::encode, PriceResultPacket::decode, PriceResultPacket::handle);
+    public static void init(IEventBus modEventBus) {
+        modEventBus.addListener(SellBoxNetwork::registerPayloads);
+    }
+
+    private static void registerPayloads(RegisterPayloadHandlersEvent event) {
+        PayloadRegistrar registrar = event.registrar(PROTOCOL);
+        registrar.playToClient(SyncOwnersPacket.TYPE, SyncOwnersPacket.STREAM_CODEC,
+                SyncOwnersPacket::handle);
+        registrar.playToServer(ClaimOwnerPacket.TYPE, ClaimOwnerPacket.STREAM_CODEC,
+                ClaimOwnerPacket::handle);
+        registrar.playToServer(SetSettingsPacket.TYPE, SetSettingsPacket.STREAM_CODEC,
+                SetSettingsPacket::handle);
+        registrar.playToClient(SyncPricesPacket.TYPE, SyncPricesPacket.STREAM_CODEC,
+                SyncPricesPacket::handle);
+        registrar.playToServer(QueryPricePacket.TYPE, QueryPricePacket.STREAM_CODEC,
+                QueryPricePacket::handle);
+        registrar.playToClient(PriceResultPacket.TYPE, PriceResultPacket.STREAM_CODEC,
+                PriceResultPacket::handle);
     }
 
     public static void sendOwners(ServerPlayer player, SellBoxBlockEntity box) {
-        SellBoxSavedData data = SellBoxSavedData.get(player.server);
-        List<SellBoxMenu.PlayerChoice> choices = data.players().stream()
-                .map(p -> new SellBoxMenu.PlayerChoice(p.uuid(), p.name())).toList();
-        CHANNEL.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
+        PacketDistributor.sendToPlayer(player,
                 new SyncOwnersPacket(box.getBlockPos(), box.owner(), box.ownerName(),
                         box.sellMode(), box.saleIntervalTicks(),
-                        box.showActionBarNotification(), box.showChatNotification(), choices));
+                        box.showActionBarNotification(), box.showChatNotification()));
     }
 
     public static void broadcastOwner(MinecraftServer server, SellBoxBlockEntity box) {
@@ -65,24 +63,24 @@ public final class SellBoxNetwork {
     }
 
     public static void sendPrices(ServerPlayer player) {
-        CHANNEL.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
+        PacketDistributor.sendToPlayer(player,
                 new SyncPricesPacket(SellBoxConfig.defaultCurrency(), SellBoxPrices.serverRules(),
                         SellBoxConfig.showPriceTooltip(), SellBoxPrices.hasDynamicPriceFunction(),
                         currencyDisplayNames()));
     }
 
-    public static void sendSetOwner(BlockPos pos, UUID owner) {
-        CHANNEL.sendToServer(new SetOwnerPacket(pos, owner));
+    public static void sendClaimOwner(BlockPos pos) {
+        PacketDistributor.sendToServer(new ClaimOwnerPacket(pos));
     }
 
     public static void sendSettings(BlockPos pos, SellMode mode, int intervalTicks,
                                     boolean showActionBarNotification, boolean showChatNotification) {
-        CHANNEL.sendToServer(new SetSettingsPacket(pos, mode, intervalTicks,
+        PacketDistributor.sendToServer(new SetSettingsPacket(pos, mode, intervalTicks,
                 showActionBarNotification, showChatNotification));
     }
 
     public static void sendPriceQuery(int requestId, net.minecraft.world.item.ItemStack stack) {
-        CHANNEL.sendToServer(new QueryPricePacket(requestId, stack.copy()));
+        PacketDistributor.sendToServer(new QueryPricePacket(requestId, stack.copy()));
     }
 
     public static void broadcastPrices(MinecraftServer server) {
@@ -90,12 +88,8 @@ public final class SellBoxNetwork {
                 SellBoxPrices.serverRules(), SellBoxConfig.showPriceTooltip(),
                 SellBoxPrices.hasDynamicPriceFunction(), currencyDisplayNames());
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            CHANNEL.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player), packet);
+            PacketDistributor.sendToPlayer(player, packet);
         }
-    }
-
-    private static void enqueueClient(Runnable action) {
-        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> action.run());
     }
 
     private static Map<String, String> currencyDisplayNames() {
@@ -106,9 +100,13 @@ public final class SellBoxNetwork {
 
     public record SyncOwnersPacket(BlockPos pos, UUID owner, String ownerName,
                                    SellMode sellMode, int saleIntervalTicks,
-                                   boolean showActionBarNotification, boolean showChatNotification,
-                                   List<SellBoxMenu.PlayerChoice> choices) {
-        public static void encode(SyncOwnersPacket packet, FriendlyByteBuf buf) {
+                                   boolean showActionBarNotification, boolean showChatNotification)  implements CustomPacketPayload{
+        public static final CustomPacketPayload.Type<SyncOwnersPacket> TYPE = new CustomPacketPayload.Type<>(
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(SellBoxMod.MODID, "sync_owners"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, SyncOwnersPacket> STREAM_CODEC =
+                CustomPacketPayload.codec(SyncOwnersPacket::encode, SyncOwnersPacket::decode);
+
+        public static void encode(SyncOwnersPacket packet, RegistryFriendlyByteBuf buf) {
             buf.writeBlockPos(packet.pos);
             buf.writeBoolean(packet.owner != null);
             if (packet.owner != null) buf.writeUUID(packet.owner);
@@ -117,14 +115,9 @@ public final class SellBoxNetwork {
             buf.writeVarInt(packet.saleIntervalTicks);
             buf.writeBoolean(packet.showActionBarNotification);
             buf.writeBoolean(packet.showChatNotification);
-            buf.writeVarInt(packet.choices.size());
-            for (SellBoxMenu.PlayerChoice choice : packet.choices) {
-                buf.writeUUID(choice.uuid());
-                buf.writeUtf(choice.name(), 64);
-            }
         }
 
-        public static SyncOwnersPacket decode(FriendlyByteBuf buf) {
+        public static SyncOwnersPacket decode(RegistryFriendlyByteBuf buf) {
             BlockPos pos = buf.readBlockPos();
             UUID owner = buf.readBoolean() ? buf.readUUID() : null;
             String ownerName = buf.readUtf(64);
@@ -132,62 +125,60 @@ public final class SellBoxNetwork {
             int saleIntervalTicks = buf.readVarInt();
             boolean showActionBarNotification = buf.readBoolean();
             boolean showChatNotification = buf.readBoolean();
-            int count = Math.min(buf.readVarInt(), 10000);
-            List<SellBoxMenu.PlayerChoice> choices = new ArrayList<>();
-            for (int i = 0; i < count; i++) {
-                choices.add(new SellBoxMenu.PlayerChoice(buf.readUUID(), buf.readUtf(64)));
-            }
             return new SyncOwnersPacket(pos, owner, ownerName, sellMode, saleIntervalTicks,
-                    showActionBarNotification, showChatNotification, choices);
+                    showActionBarNotification, showChatNotification);
         }
 
-        public static void handle(SyncOwnersPacket packet, Supplier<NetworkEvent.Context> supplier) {
-            NetworkEvent.Context context = supplier.get();
-            context.enqueueWork(() -> enqueueClient(() -> com.qshop.sellbox.client.SellBoxClient.applyOwners(packet)));
-            context.setPacketHandled(true);
+        public static void handle(SyncOwnersPacket packet, IPayloadContext context) {
+                        context.enqueueWork(() -> com.qshop.sellbox.client.SellBoxClient.applyOwners(packet));
         }
+        @Override
+        public CustomPacketPayload.Type<SyncOwnersPacket> type() {
+            return TYPE;
+        }
+
     }
 
-    public record SetOwnerPacket(BlockPos pos, UUID owner) {
-        public static void encode(SetOwnerPacket packet, FriendlyByteBuf buf) {
+    public record ClaimOwnerPacket(BlockPos pos)  implements CustomPacketPayload{
+        public static final CustomPacketPayload.Type<ClaimOwnerPacket> TYPE = new CustomPacketPayload.Type<>(
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(SellBoxMod.MODID, "claim_owner"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, ClaimOwnerPacket> STREAM_CODEC =
+                CustomPacketPayload.codec(ClaimOwnerPacket::encode, ClaimOwnerPacket::decode);
+
+        public static void encode(ClaimOwnerPacket packet, RegistryFriendlyByteBuf buf) {
             buf.writeBlockPos(packet.pos);
-            buf.writeUUID(packet.owner);
         }
 
-        public static SetOwnerPacket decode(FriendlyByteBuf buf) {
-            return new SetOwnerPacket(buf.readBlockPos(), buf.readUUID());
+        public static ClaimOwnerPacket decode(RegistryFriendlyByteBuf buf) {
+            return new ClaimOwnerPacket(buf.readBlockPos());
         }
 
-        public static void handle(SetOwnerPacket packet, Supplier<NetworkEvent.Context> supplier) {
-            NetworkEvent.Context context = supplier.get();
-            ServerPlayer sender = context.getSender();
+        public static void handle(ClaimOwnerPacket packet, IPayloadContext context) {
+                        ServerPlayer sender = (ServerPlayer) context.player();
             if (sender != null) {
                 context.enqueueWork(() -> {
                     if (!(sender.serverLevel().getBlockEntity(packet.pos) instanceof SellBoxBlockEntity box)) return;
                     if (!box.stillValid(sender)) return;
-                    SellBoxSavedData data = SellBoxSavedData.get(sender.server);
-                    if (!box.canEditOwner(sender)) {
-                        sender.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
-                                "qshop_sellbox.message.not_owner"));
-                        return;
-                    }
-                    SellBoxSavedData.PlayerRecord record = data.player(packet.owner);
-                    if (record == null) {
-                        sender.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
-                                "qshop_sellbox.message.no_player"));
-                        return;
-                    }
-                    box.setOwner(record.uuid(), record.name());
+                    box.setOwner(sender.getUUID(), sender.getGameProfile().getName());
                     broadcastOwner(sender.server, box);
                 });
             }
-            context.setPacketHandled(true);
         }
+        @Override
+        public CustomPacketPayload.Type<ClaimOwnerPacket> type() {
+            return TYPE;
+        }
+
     }
 
     public record SetSettingsPacket(BlockPos pos, SellMode mode, int intervalTicks,
-                                    boolean showActionBarNotification, boolean showChatNotification) {
-        public static void encode(SetSettingsPacket packet, FriendlyByteBuf buf) {
+                                    boolean showActionBarNotification, boolean showChatNotification)  implements CustomPacketPayload{
+        public static final CustomPacketPayload.Type<SetSettingsPacket> TYPE = new CustomPacketPayload.Type<>(
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(SellBoxMod.MODID, "set_settings"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, SetSettingsPacket> STREAM_CODEC =
+                CustomPacketPayload.codec(SetSettingsPacket::encode, SetSettingsPacket::decode);
+
+        public static void encode(SetSettingsPacket packet, RegistryFriendlyByteBuf buf) {
             buf.writeBlockPos(packet.pos);
             buf.writeEnum(packet.mode);
             buf.writeVarInt(packet.intervalTicks);
@@ -195,14 +186,13 @@ public final class SellBoxNetwork {
             buf.writeBoolean(packet.showChatNotification);
         }
 
-        public static SetSettingsPacket decode(FriendlyByteBuf buf) {
+        public static SetSettingsPacket decode(RegistryFriendlyByteBuf buf) {
             return new SetSettingsPacket(buf.readBlockPos(), buf.readEnum(SellMode.class), buf.readVarInt(),
                     buf.readBoolean(), buf.readBoolean());
         }
 
-        public static void handle(SetSettingsPacket packet, Supplier<NetworkEvent.Context> supplier) {
-            NetworkEvent.Context context = supplier.get();
-            ServerPlayer sender = context.getSender();
+        public static void handle(SetSettingsPacket packet, IPayloadContext context) {
+                        ServerPlayer sender = (ServerPlayer) context.player();
             if (sender != null) {
                 context.enqueueWork(() -> {
                     if (!(sender.serverLevel().getBlockEntity(packet.pos) instanceof SellBoxBlockEntity box)
@@ -222,14 +212,23 @@ public final class SellBoxNetwork {
                     broadcastOwner(sender.server, box);
                 });
             }
-            context.setPacketHandled(true);
         }
+        @Override
+        public CustomPacketPayload.Type<SetSettingsPacket> type() {
+            return TYPE;
+        }
+
     }
 
     public record SyncPricesPacket(String defaultCurrency, List<PriceRule> rules,
                                    boolean showPriceTooltip, boolean hasDynamicPriceFunction,
-                                   Map<String, String> currencyDisplayNames) {
-        public static void encode(SyncPricesPacket packet, FriendlyByteBuf buf) {
+                                   Map<String, String> currencyDisplayNames)  implements CustomPacketPayload{
+        public static final CustomPacketPayload.Type<SyncPricesPacket> TYPE = new CustomPacketPayload.Type<>(
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(SellBoxMod.MODID, "sync_prices"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, SyncPricesPacket> STREAM_CODEC =
+                CustomPacketPayload.codec(SyncPricesPacket::encode, SyncPricesPacket::decode);
+
+        public static void encode(SyncPricesPacket packet, RegistryFriendlyByteBuf buf) {
             buf.writeUtf(packet.defaultCurrency, 64);
             buf.writeBoolean(packet.showPriceTooltip);
             buf.writeBoolean(packet.hasDynamicPriceFunction);
@@ -249,7 +248,7 @@ public final class SellBoxNetwork {
             }
         }
 
-        public static SyncPricesPacket decode(FriendlyByteBuf buf) {
+        public static SyncPricesPacket decode(RegistryFriendlyByteBuf buf) {
             String currency = buf.readUtf(64);
             boolean showPriceTooltip = buf.readBoolean();
             boolean hasDynamicPriceFunction = buf.readBoolean();
@@ -273,46 +272,61 @@ public final class SellBoxNetwork {
                     hasDynamicPriceFunction, currencyDisplayNames);
         }
 
-        public static void handle(SyncPricesPacket packet, Supplier<NetworkEvent.Context> supplier) {
-            NetworkEvent.Context context = supplier.get();
-            context.enqueueWork(() -> enqueueClient(() ->
-                    com.qshop.sellbox.client.SellBoxClient.applyPrices(packet)));
-            context.setPacketHandled(true);
+        public static void handle(SyncPricesPacket packet, IPayloadContext context) {
+                        context.enqueueWork(() -> com.qshop.sellbox.client.SellBoxClient.applyPrices(packet));
         }
+        @Override
+        public CustomPacketPayload.Type<SyncPricesPacket> type() {
+            return TYPE;
+        }
+
     }
 
-    public record QueryPricePacket(int requestId, net.minecraft.world.item.ItemStack stack) {
-        public static void encode(QueryPricePacket packet, FriendlyByteBuf buf) {
+    public record QueryPricePacket(int requestId, net.minecraft.world.item.ItemStack stack)  implements CustomPacketPayload{
+        public static final CustomPacketPayload.Type<QueryPricePacket> TYPE = new CustomPacketPayload.Type<>(
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(SellBoxMod.MODID, "query_price"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, QueryPricePacket> STREAM_CODEC =
+                CustomPacketPayload.codec(QueryPricePacket::encode, QueryPricePacket::decode);
+
+        public static void encode(QueryPricePacket packet, RegistryFriendlyByteBuf buf) {
             buf.writeVarInt(packet.requestId);
-            buf.writeItem(packet.stack);
+            net.minecraft.world.item.ItemStack.OPTIONAL_STREAM_CODEC.encode(buf, packet.stack);
         }
 
-        public static QueryPricePacket decode(FriendlyByteBuf buf) {
-            return new QueryPricePacket(buf.readVarInt(), buf.readItem());
+        public static QueryPricePacket decode(RegistryFriendlyByteBuf buf) {
+            return new QueryPricePacket(buf.readVarInt(), net.minecraft.world.item.ItemStack.OPTIONAL_STREAM_CODEC.decode(buf));
         }
 
-        public static void handle(QueryPricePacket packet, Supplier<NetworkEvent.Context> supplier) {
-            NetworkEvent.Context context = supplier.get();
-            ServerPlayer sender = context.getSender();
+        public static void handle(QueryPricePacket packet, IPayloadContext context) {
+                        ServerPlayer sender = (ServerPlayer) context.player();
             if (sender != null) {
                 context.enqueueWork(() -> {
                     PriceQuote quote = SellBoxPrices.resolve(packet.stack);
-                    CHANNEL.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> sender),
+                    PacketDistributor.sendToPlayer(sender,
                             PriceResultPacket.from(packet.requestId, quote));
                 });
             }
-            context.setPacketHandled(true);
         }
+        @Override
+        public CustomPacketPayload.Type<QueryPricePacket> type() {
+            return TYPE;
+        }
+
     }
 
-    public record PriceResultPacket(int requestId, boolean found, double price, String currency) {
+    public record PriceResultPacket(int requestId, boolean found, double price, String currency)  implements CustomPacketPayload{
+        public static final CustomPacketPayload.Type<PriceResultPacket> TYPE = new CustomPacketPayload.Type<>(
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(SellBoxMod.MODID, "price_result"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, PriceResultPacket> STREAM_CODEC =
+                CustomPacketPayload.codec(PriceResultPacket::encode, PriceResultPacket::decode);
+
         private static PriceResultPacket from(int requestId, PriceQuote quote) {
             return quote == null
                     ? new PriceResultPacket(requestId, false, 0D, "")
                     : new PriceResultPacket(requestId, true, quote.price(), quote.currency());
         }
 
-        public static void encode(PriceResultPacket packet, FriendlyByteBuf buf) {
+        public static void encode(PriceResultPacket packet, RegistryFriendlyByteBuf buf) {
             buf.writeVarInt(packet.requestId);
             buf.writeBoolean(packet.found);
             if (packet.found) {
@@ -321,17 +335,19 @@ public final class SellBoxNetwork {
             }
         }
 
-        public static PriceResultPacket decode(FriendlyByteBuf buf) {
+        public static PriceResultPacket decode(RegistryFriendlyByteBuf buf) {
             int requestId = buf.readVarInt();
             if (!buf.readBoolean()) return new PriceResultPacket(requestId, false, 0D, "");
             return new PriceResultPacket(requestId, true, buf.readDouble(), buf.readUtf(64));
         }
 
-        public static void handle(PriceResultPacket packet, Supplier<NetworkEvent.Context> supplier) {
-            NetworkEvent.Context context = supplier.get();
-            context.enqueueWork(() -> enqueueClient(() ->
-                    com.qshop.sellbox.client.SellBoxClient.applyPriceResult(packet)));
-            context.setPacketHandled(true);
+        public static void handle(PriceResultPacket packet, IPayloadContext context) {
+                        context.enqueueWork(() -> com.qshop.sellbox.client.SellBoxClient.applyPriceResult(packet));
         }
+        @Override
+        public CustomPacketPayload.Type<PriceResultPacket> type() {
+            return TYPE;
+        }
+
     }
 }

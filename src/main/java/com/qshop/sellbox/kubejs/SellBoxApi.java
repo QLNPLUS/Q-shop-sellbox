@@ -4,7 +4,10 @@ import com.qshop.sellbox.NbtStrings;
 import com.qshop.sellbox.PriceQuote;
 import com.qshop.sellbox.SellBoxConfig;
 import com.qshop.sellbox.SellBoxPrices;
+import com.qshop.util.ItemStackData;
+import com.google.gson.Gson;
 import dev.latvian.mods.rhino.Context;
+import dev.latvian.mods.rhino.ContextFactory;
 import dev.latvian.mods.rhino.Function;
 import dev.latvian.mods.rhino.Scriptable;
 import dev.latvian.mods.rhino.ScriptableObject;
@@ -13,6 +16,8 @@ import net.minecraft.world.item.ItemStack;
 
 public final class SellBoxApi {
     public static final SellBoxApi INSTANCE = new SellBoxApi();
+    private static final ContextFactory CONTEXT_FACTORY = new ContextFactory();
+    private static final Gson GSON = new Gson();
 
     private SellBoxApi() {}
 
@@ -72,11 +77,11 @@ public final class SellBoxApi {
     }
 
     private static PriceQuote invoke(Function function, ItemStack stack, String currency) {
-        Context context = Context.enter();
+        Context context = CONTEXT_FACTORY.enter();
         try {
             Scriptable scope = function.getParentScope();
             SellBoxPriceEvent priceEvent = new SellBoxPriceEvent(stack, context);
-            Object event = Context.javaToJS(context, priceEvent, scope);
+            Object event = context.javaToJS(priceEvent, scope);
             debugInput(context, event, stack);
             Object result = function.call(context, scope, scope, new Object[]{event});
             result = Wrapper.unwrapped(result);
@@ -133,7 +138,8 @@ public final class SellBoxApi {
             }
         }
         System.out.println("[QShop SellBox] Dynamic price debug input: id="
-                + stack.getItem() + ", tag=" + (stack.getTag() == null ? "<none>" : stack.getTag())
+                + stack.getItem() + ", tag=" + (ItemStackData.getCustomTag(stack) == null
+                ? "<none>" : ItemStackData.getCustomTag(stack))
                 + ", itemJsType=" + typeName(item)
                 + ", nbtJsType=" + typeName(nbt)
                 + ", rarity=" + value(rarity)
@@ -159,7 +165,7 @@ public final class SellBoxApi {
             if (nbt != null && !(nbt instanceof String)
                     && !(nbt instanceof net.minecraft.nbt.CompoundTag)
                     && !(nbt instanceof com.google.gson.JsonElement)) {
-                nbt = dev.latvian.mods.kubejs.util.JsonIO.of(nbt);
+                nbt = GSON.toJsonTree(nbt);
             }
             return NbtStrings.parse(nbt);
         } catch (IllegalArgumentException exception) {

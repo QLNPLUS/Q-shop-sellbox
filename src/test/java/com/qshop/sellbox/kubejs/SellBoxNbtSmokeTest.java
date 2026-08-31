@@ -1,6 +1,7 @@
 package com.qshop.sellbox.kubejs;
 
 import dev.latvian.mods.rhino.Context;
+import dev.latvian.mods.rhino.ContextFactory;
 import dev.latvian.mods.rhino.Function;
 import dev.latvian.mods.rhino.NativeObject;
 import dev.latvian.mods.rhino.Scriptable;
@@ -12,7 +13,7 @@ public final class SellBoxNbtSmokeTest {
     private SellBoxNbtSmokeTest() {}
 
     public static void main(String[] args) {
-        Context context = Context.enter();
+        Context context = new ContextFactory().enter();
         Scriptable scope = context.initStandardObjects();
 
         CompoundTag tag = new CompoundTag();
@@ -22,9 +23,9 @@ public final class SellBoxNbtSmokeTest {
         nested.putInt("value", 3);
         tag.put("nested", nested);
 
-        NativeObject item = new NativeObject(context);
+        NativeObject item = new NativeObject(context.factory);
         item.put(context, "nbt", item, SellBoxItemView.toJsNbt(context, tag));
-        NativeObject event = new NativeObject(context);
+        NativeObject event = new NativeObject(context.factory);
         event.put(context, "item", event, item);
         Object script = context.evaluateString(scope,
                 "(function(event) {"

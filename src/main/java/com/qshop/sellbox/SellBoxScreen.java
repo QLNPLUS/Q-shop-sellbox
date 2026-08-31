@@ -59,8 +59,6 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
     }
 
     private int tab;
-    private boolean dropdown;
-    private int ownerPage;
     private IntervalUnit intervalUnit = IntervalUnit.SECONDS;
     private LayeredEditBox intervalInput;
     private boolean settingsCommitted;
@@ -126,6 +124,12 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
     }
 
     @Override
+    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        graphics.fill(0, 0, this.width, this.height, 0x66000000);
+        renderBg(graphics, partialTick, mouseX, mouseY);
+    }
+
+    @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         if (tab == 0) {
             // Match the vanilla container labels: dark text without a drop shadow.
@@ -146,7 +150,6 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         SellBoxEmiCompat.setSettingsSuppressed(tab == 1);
         syncIntervalInputPosition();
-        renderBackground(graphics);
         if (tab == 0) {
             // Keep the vanilla container path on the item page, including item tooltips.
             super.render(graphics, mouseX, mouseY, partialTick);
@@ -178,15 +181,7 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
             graphics.pose().popPose();
         }
 
-        if (dropdown) {
-            graphics.pose().pushPose();
-            graphics.pose().translate(0, 0, 600);
-            renderDropdown(graphics, mouseX, mouseY);
-            graphics.flush();
-            graphics.pose().popPose();
-        }
-
-        if (tab == 1 && !dropdown && menu.owner() != null
+        if (tab == 1 && menu.owner() != null
                 && inside(mouseX, mouseY,
                 screenX(SellBoxLayoutDebug.Widget.OWNER_AVATAR, 8),
                 screenY(SellBoxLayoutDebug.Widget.OWNER_AVATAR, 20), 160, 20)) {
@@ -252,7 +247,7 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
 
         int ownerButtonX = screenX(SellBoxLayoutDebug.Widget.OWNER_BUTTON, 8);
         int ownerButtonY = screenY(SellBoxLayoutDebug.Widget.OWNER_BUTTON, 45);
-        Component ownerLabel = Component.translatable("qshop_sellbox.owner.choose");
+        Component ownerLabel = Component.translatable("qshop_sellbox.owner.claim");
         int ownerButtonWidth = buttonWidth(ownerLabel, BUTTON_MIN_WIDTH, imageWidth - 16);
         drawButton(graphics, ownerButtonX, ownerButtonY,
                 ownerLabel, ownerButtonWidth,
@@ -361,31 +356,12 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
                 "minecraft", "textures/entity/steve.png");
         if (owner != null && Minecraft.getInstance().getConnection() != null) {
             PlayerInfo info = Minecraft.getInstance().getConnection().getPlayerInfo(owner);
-            if (info != null) skin = info.getSkinLocation();
+            if (info != null) skin = info.getSkin().texture();
         }
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderTexture(0, skin);
         graphics.blit(skin, x, y, 20, 20, 8, 8, 8, 8, 64, 64);
         graphics.blit(skin, x, y, 20, 20, 40, 8, 8, 8, 64, 64);
-    }
-
-    private void renderDropdown(GuiGraphics graphics, int mouseX, int mouseY) {
-        List<SellBoxMenu.PlayerChoice> choices = menu.playerChoices();
-        int x = screenX(SellBoxLayoutDebug.Widget.OWNER_BUTTON, 8);
-        int y = screenY(SellBoxLayoutDebug.Widget.OWNER_BUTTON, 45) - 1;
-        SellBoxTextures.dropdown(graphics, x, y);
-        drawText(graphics, Component.translatable("qshop_sellbox.owner.dropdown"),
-                x + 5, y + 4, TEXT_COLOR);
-        int start = ownerPage * 4;
-        int visible = Math.min(4, Math.max(0, choices.size() - start));
-        for (int i = 0; i < visible; i++) {
-            SellBoxMenu.PlayerChoice choice = choices.get(start + i);
-            int rowY = y + 18 + i * 18;
-            if (inside(mouseX, mouseY, x + 2, rowY, 156, 18)) {
-                SellBoxTextures.dropdownHover(graphics, x, rowY);
-            }
-            drawText(graphics, trim(choice.name(), 22), x + 7, rowY + 5, TEXT_COLOR);
-        }
     }
 
     private void sendSettings(SellMode mode, int intervalTicks) {
@@ -431,7 +407,6 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
 
     private void setTab(int nextTab) {
         tab = nextTab;
-        dropdown = false;
         SellBoxEmiCompat.setSettingsSuppressed(nextTab == 1);
         SellBoxLayoutDebug.ensureSelected(tab);
         if (intervalInput != null) {
@@ -501,7 +476,7 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
             case OWNER_AVATAR -> new DebugBounds(screenX(widget, 8), screenY(widget, 20), 20, 20);
             case OWNER_INFO -> new DebugBounds(screenX(widget, 34), screenY(widget, 24), 120, font.lineHeight);
             case OWNER_BUTTON -> {
-                Component label = Component.translatable("qshop_sellbox.owner.choose");
+                Component label = Component.translatable("qshop_sellbox.owner.claim");
                 yield new DebugBounds(screenX(widget, 8), screenY(widget, 45),
                         buttonWidth(label, BUTTON_MIN_WIDTH, imageWidth - 16), BUTTON_HEIGHT);
             }
@@ -565,22 +540,6 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
             return true;
         }
         if (tab == 1) {
-            if (dropdown) {
-                int x = screenX(SellBoxLayoutDebug.Widget.OWNER_BUTTON, 8);
-                int y = screenY(SellBoxLayoutDebug.Widget.OWNER_BUTTON, 45) - 1;
-                int start = ownerPage * 4;
-                for (int i = 0; i < Math.min(4, menu.playerChoices().size() - start); i++) {
-                    if (inside(mouseX, mouseY, x + 2, y + 18 + i * 18, 156, 18)) {
-                        SellBoxMenu.PlayerChoice choice = menu.playerChoices().get(start + i);
-                        menu.setOwnerData(choice.uuid(), choice.name(), menu.playerChoices());
-                        SellBoxNetwork.sendSetOwner(menu.pos(), choice.uuid());
-                        dropdown = false;
-                        return true;
-                    }
-                }
-                dropdown = false;
-                return true;
-            }
             Component unitLabel = Component.translatable(intervalUnit.translationKey);
             int unitButtonWidth = buttonWidth(unitLabel, BUTTON_MIN_WIDTH, imageWidth - 112);
             int unitButtonX = screenX(SellBoxLayoutDebug.Widget.INTERVAL_UNIT, 104);
@@ -595,14 +554,13 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
                     screenY(SellBoxLayoutDebug.Widget.INTERVAL_INPUT, 122), 96, 12)) {
                 intervalInput.setFocused(false);
             }
-            Component ownerLabel = Component.translatable("qshop_sellbox.owner.choose");
+            Component ownerLabel = Component.translatable("qshop_sellbox.owner.claim");
             int ownerButtonWidth = buttonWidth(ownerLabel, BUTTON_MIN_WIDTH, imageWidth - 16);
             int ownerButtonX = screenX(SellBoxLayoutDebug.Widget.OWNER_BUTTON, 8);
             int ownerButtonY = screenY(SellBoxLayoutDebug.Widget.OWNER_BUTTON, 45);
             if (inside(mouseX, mouseY, ownerButtonX, ownerButtonY,
                     ownerButtonWidth, BUTTON_HEIGHT)) {
-                dropdown = true;
-                ownerPage = 0;
+                SellBoxNetwork.sendClaimOwner(menu.pos());
                 return true;
             }
             Component intervalLabel = Component.translatable("qshop_sellbox.mode.interval");
@@ -702,13 +660,8 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        if (tab == 1 && dropdown && !menu.playerChoices().isEmpty()) {
-            int maxPage = (menu.playerChoices().size() - 1) / 4;
-            ownerPage = Mth.clamp(ownerPage + (delta < 0 ? 1 : -1), 0, maxPage);
-            return true;
-        }
-        return super.mouseScrolled(mouseX, mouseY, delta);
+    public boolean mouseScrolled(double mouseX, double mouseY, double deltaX, double deltaY) {
+        return super.mouseScrolled(mouseX, mouseY, deltaX, deltaY);
     }
 
     private String trim(String value, int max) {

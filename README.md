@@ -1,6 +1,6 @@
 # QShop Sell Box
 
-QShop 1.1.0 的 Forge 1.20.1 附属模组。`qshop-sellbox-1.0.1.jar` 需要和 QShop 一起放入 `mods`。
+QShop 1.1.0 的 Forge 1.20.1 附属模组。`qshop-sellbox-1.0.2.jar` 需要和 QShop 一起放入 `mods`。
 
 ## 功能
 
@@ -66,7 +66,7 @@ SellBox.price(event => {
 })
 ```
 
-`event.item` 是脚本友好的物品视图，`event.item.id`、`event.item.count`、`event.item.damage`、`event.item.maxDamage` 和 `event.item.nbt` 可直接读取；NBT 会递归转换为 JavaScript 对象和数组，因此可以按任意多个字段组合计算价格。也可以使用 `SellBox.priceFunction(callback)` 或 `SellBox.dynamicPrice(callback)`，它们与上面的写法相同。需要指定回调使用的货币时，可传第二个参数，例如 `SellBox.priceFunction(callback, 'coins')`；省略时使用配置中的 `defaultCurrency`。
+`event.item` 是脚本友好的物品视图，`event.item.id`、`event.item.count`、`event.item.damage`、`event.item.maxDamage` 和 `event.item.nbt` 可直接读取；NBT 会递归转换为 JavaScript 对象和数组，因此可以按任意多个字段组合计算价格。也可以使用 `event.item.hasTag('forge:tools')` 检查物品标签，标签参数可以带或不带 `#`。也可以使用 `SellBox.priceFunction(callback)` 或 `SellBox.dynamicPrice(callback)`，它们与上面的写法相同。需要指定回调使用的货币时，可传第二个参数，例如 `SellBox.priceFunction(callback, 'coins')`；省略时使用配置中的 `defaultCurrency`。
 
 排查价格脚本时，可以在 `config/qshop_sellbox-common.toml` 临时开启 `debugDynamicPrice = true`，日志会记录原始物品 NBT、脚本看到的 `rarity`/`Damage` 和最终返回值。调试完成后建议关闭。
 

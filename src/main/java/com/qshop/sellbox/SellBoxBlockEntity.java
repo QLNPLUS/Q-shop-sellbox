@@ -1,7 +1,7 @@
 package com.qshop.sellbox;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -9,11 +9,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.ItemStackHandler;
+import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.ItemStackHandler;
 
 import javax.annotation.Nullable;
 import java.util.UUID;
@@ -28,7 +25,6 @@ public final class SellBoxBlockEntity extends BlockEntity {
             setChanged();
         }
     };
-    private final LazyOptional<IItemHandler> itemHandler = LazyOptional.of(() -> items);
     @Nullable
     private UUID owner;
     private String ownerName = "";
@@ -111,9 +107,9 @@ public final class SellBoxBlockEntity extends BlockEntity {
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
-        tag.put("inventory", items.serializeNBT());
+    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
+        tag.put("inventory", items.serializeNBT(registries));
         if (owner != null) tag.putUUID("owner", owner);
         tag.putString("ownerName", ownerName);
         tag.putInt("sellMode", sellMode.ordinal());
@@ -124,9 +120,9 @@ public final class SellBoxBlockEntity extends BlockEntity {
     }
 
     @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
-        if (tag.contains("inventory")) items.deserializeNBT(tag.getCompound("inventory"));
+    public void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
+        if (tag.contains("inventory")) items.deserializeNBT(registries, tag.getCompound("inventory"));
         owner = tag.hasUUID("owner") ? tag.getUUID("owner") : null;
         ownerName = tag.getString("ownerName");
         sellMode = SellMode.fromId(tag.getInt("sellMode"));
@@ -139,15 +135,4 @@ public final class SellBoxBlockEntity extends BlockEntity {
         nextSaleTick = tag.contains("nextSaleTick") ? tag.getLong("nextSaleTick") : -1L;
     }
 
-    @Override
-    public <T> LazyOptional<T> getCapability(Capability<T> capability, @Nullable Direction side) {
-        if (capability == ForgeCapabilities.ITEM_HANDLER) return itemHandler.cast();
-        return super.getCapability(capability, side);
-    }
-
-    @Override
-    public void invalidateCaps() {
-        super.invalidateCaps();
-        itemHandler.invalidate();
-    }
 }

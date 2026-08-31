@@ -40,7 +40,7 @@ public final class SellBoxLayoutDebug {
         OWNER_TITLE("Owner title", 1),
         OWNER_AVATAR("Owner avatar", 1),
         OWNER_INFO("Owner name/status", 1),
-        OWNER_BUTTON("Choose player button", 1),
+        OWNER_BUTTON("Claim owner button", 1),
         MODE_LABEL("Sell mode label", 1),
         MODE_INTERVAL("Interval mode button", 1),
         MODE_CLOSED_GUI("GUI close mode button", 1),

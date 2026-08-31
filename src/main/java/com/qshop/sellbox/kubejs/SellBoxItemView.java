@@ -1,8 +1,12 @@
 package com.qshop.sellbox.kubejs;
 
 import dev.latvian.mods.rhino.Context;
+import dev.latvian.mods.rhino.ContextFactory;
+import dev.latvian.mods.rhino.BaseFunction;
 import dev.latvian.mods.rhino.NativeArray;
 import dev.latvian.mods.rhino.NativeObject;
+import dev.latvian.mods.rhino.Scriptable;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.ByteArrayTag;
 import net.minecraft.nbt.CompoundTag;
@@ -12,6 +16,8 @@ import net.minecraft.nbt.LongArrayTag;
 import net.minecraft.nbt.NumericTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.tags.TagKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
 /** Script-friendly view of an item stack used by the dynamic price callback. */
@@ -20,11 +26,11 @@ public final class SellBoxItemView extends NativeObject {
     private final Context context;
 
     public SellBoxItemView(ItemStack stack) {
-        this(stack, Context.enter());
+        this(stack, new ContextFactory().enter());
     }
 
     SellBoxItemView(ItemStack stack, Context context) {
-        super(context);
+        super(context.factory);
         this.stack = stack.copy();
         this.context = context;
         exposeProperties();
@@ -37,6 +43,24 @@ public final class SellBoxItemView extends NativeObject {
         put(context, "maxDamage", this, getMaxDamage());
         put(context, "isDamaged", this, isDamaged());
         put(context, "nbt", this, getNbt());
+        put(context, "hasTag", this, new BaseFunction() {
+            @Override
+            public Object call(Context callContext, Scriptable scope, Scriptable thisObj, Object[] args) {
+                if (args.length == 0 || args[0] == null
+                        || args[0] == Context.getUndefinedValue()) return false;
+                return hasTag(String.valueOf(args[0]));
+            }
+
+            @Override
+            public String getFunctionName() {
+                return "hasTag";
+            }
+
+            @Override
+            public int getArity() {
+                return 1;
+            }
+        });
     }
 
     public String getId() {
@@ -63,9 +87,18 @@ public final class SellBoxItemView extends NativeObject {
         return stack.copy();
     }
 
+    /** Checks an item tag using the server's current item tag registry. */
+    public boolean hasTag(String tagId) {
+        if (tagId == null || tagId.isBlank()) return false;
+        String normalized = tagId.charAt(0) == '#' ? tagId.substring(1) : tagId;
+        ResourceLocation location = ResourceLocation.tryParse(normalized);
+        if (location == null) return false;
+        return stack.is(TagKey.create(Registries.ITEM, location));
+    }
+
     /** Returns NBT as ordinary JavaScript objects, arrays, strings, and numbers. */
     public Object getNbt() {
-        CompoundTag tag = stack.getTag();
+        CompoundTag tag = com.qshop.util.ItemStackData.getCustomTag(stack);
         if (tag == null || tag.isEmpty()) return null;
         return toJsNbt(context, tag);
     }
@@ -77,7 +110,7 @@ public final class SellBoxItemView extends NativeObject {
     private static Object toJsValue(Context context, Tag tag) {
         if (tag == null) return null;
         if (tag instanceof CompoundTag compound) {
-            NativeObject object = new NativeObject(context);
+            NativeObject object = new NativeObject(context.factory);
             for (String key : compound.getAllKeys()) {
                 object.put(context, key, object, toJsValue(context, compound.get(key)));
             }
