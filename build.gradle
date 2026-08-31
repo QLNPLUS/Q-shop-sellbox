@@ -44,7 +44,7 @@ def addOptionalMod = { String configuration, String notation, String pattern ->
 }
 
 dependencies {
-    compileOnly files('../Q-shop/build/libs/qshop-1.2.3.jar')
+    compileOnly files('../Q-shop-neoforge-1.21.1/build/libs/qshop-neoforge-1.21.1-1.2.4.jar')
     addOptionalMod('compileOnly', "dev.latvian.mods:kubejs-neoforge:${kubejs_version}", 'kubejs-neoforge-*.jar')
     addOptionalMod('compileOnly', 'dev.latvian.mods:rhino:2101.2.7-build.85', 'rhino-*.jar')
 }
