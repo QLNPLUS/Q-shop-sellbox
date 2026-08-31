@@ -20,7 +20,7 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 public final class SellBoxNetwork {
-    private static final String PROTOCOL = "2";
+    private static final String PROTOCOL = "3";
     private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             ResourceLocation.fromNamespaceAndPath(SellBoxMod.MODID, "main"),
             () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
@@ -31,8 +31,8 @@ public final class SellBoxNetwork {
     public static void init() {
         CHANNEL.registerMessage(packetId++, SyncOwnersPacket.class,
                 SyncOwnersPacket::encode, SyncOwnersPacket::decode, SyncOwnersPacket::handle);
-        CHANNEL.registerMessage(packetId++, SetOwnerPacket.class,
-                SetOwnerPacket::encode, SetOwnerPacket::decode, SetOwnerPacket::handle);
+        CHANNEL.registerMessage(packetId++, ClaimOwnerPacket.class,
+                ClaimOwnerPacket::encode, ClaimOwnerPacket::decode, ClaimOwnerPacket::handle);
         CHANNEL.registerMessage(packetId++, SetSettingsPacket.class,
                 SetSettingsPacket::encode, SetSettingsPacket::decode, SetSettingsPacket::handle);
         CHANNEL.registerMessage(packetId++, SyncPricesPacket.class,
@@ -44,13 +44,10 @@ public final class SellBoxNetwork {
     }
 
     public static void sendOwners(ServerPlayer player, SellBoxBlockEntity box) {
-        SellBoxSavedData data = SellBoxSavedData.get(player.server);
-        List<SellBoxMenu.PlayerChoice> choices = data.players().stream()
-                .map(p -> new SellBoxMenu.PlayerChoice(p.uuid(), p.name())).toList();
         CHANNEL.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
                 new SyncOwnersPacket(box.getBlockPos(), box.owner(), box.ownerName(),
                         box.sellMode(), box.saleIntervalTicks(),
-                        box.showActionBarNotification(), box.showChatNotification(), choices));
+                        box.showActionBarNotification(), box.showChatNotification()));
     }
 
     public static void broadcastOwner(MinecraftServer server, SellBoxBlockEntity box) {
@@ -71,8 +68,8 @@ public final class SellBoxNetwork {
                         currencyDisplayNames()));
     }
 
-    public static void sendSetOwner(BlockPos pos, UUID owner) {
-        CHANNEL.sendToServer(new SetOwnerPacket(pos, owner));
+    public static void sendClaimOwner(BlockPos pos) {
+        CHANNEL.sendToServer(new ClaimOwnerPacket(pos));
     }
 
     public static void sendSettings(BlockPos pos, SellMode mode, int intervalTicks,
@@ -106,8 +103,7 @@ public final class SellBoxNetwork {
 
     public record SyncOwnersPacket(BlockPos pos, UUID owner, String ownerName,
                                    SellMode sellMode, int saleIntervalTicks,
-                                   boolean showActionBarNotification, boolean showChatNotification,
-                                   List<SellBoxMenu.PlayerChoice> choices) {
+                                   boolean showActionBarNotification, boolean showChatNotification) {
         public static void encode(SyncOwnersPacket packet, FriendlyByteBuf buf) {
             buf.writeBlockPos(packet.pos);
             buf.writeBoolean(packet.owner != null);
@@ -117,11 +113,6 @@ public final class SellBoxNetwork {
             buf.writeVarInt(packet.saleIntervalTicks);
             buf.writeBoolean(packet.showActionBarNotification);
             buf.writeBoolean(packet.showChatNotification);
-            buf.writeVarInt(packet.choices.size());
-            for (SellBoxMenu.PlayerChoice choice : packet.choices) {
-                buf.writeUUID(choice.uuid());
-                buf.writeUtf(choice.name(), 64);
-            }
         }
 
         public static SyncOwnersPacket decode(FriendlyByteBuf buf) {
@@ -132,13 +123,8 @@ public final class SellBoxNetwork {
             int saleIntervalTicks = buf.readVarInt();
             boolean showActionBarNotification = buf.readBoolean();
             boolean showChatNotification = buf.readBoolean();
-            int count = Math.min(buf.readVarInt(), 10000);
-            List<SellBoxMenu.PlayerChoice> choices = new ArrayList<>();
-            for (int i = 0; i < count; i++) {
-                choices.add(new SellBoxMenu.PlayerChoice(buf.readUUID(), buf.readUtf(64)));
-            }
             return new SyncOwnersPacket(pos, owner, ownerName, sellMode, saleIntervalTicks,
-                    showActionBarNotification, showChatNotification, choices);
+                    showActionBarNotification, showChatNotification);
         }
 
         public static void handle(SyncOwnersPacket packet, Supplier<NetworkEvent.Context> supplier) {
@@ -148,36 +134,23 @@ public final class SellBoxNetwork {
         }
     }
 
-    public record SetOwnerPacket(BlockPos pos, UUID owner) {
-        public static void encode(SetOwnerPacket packet, FriendlyByteBuf buf) {
+    public record ClaimOwnerPacket(BlockPos pos) {
+        public static void encode(ClaimOwnerPacket packet, FriendlyByteBuf buf) {
             buf.writeBlockPos(packet.pos);
-            buf.writeUUID(packet.owner);
         }
 
-        public static SetOwnerPacket decode(FriendlyByteBuf buf) {
-            return new SetOwnerPacket(buf.readBlockPos(), buf.readUUID());
+        public static ClaimOwnerPacket decode(FriendlyByteBuf buf) {
+            return new ClaimOwnerPacket(buf.readBlockPos());
         }
 
-        public static void handle(SetOwnerPacket packet, Supplier<NetworkEvent.Context> supplier) {
+        public static void handle(ClaimOwnerPacket packet, Supplier<NetworkEvent.Context> supplier) {
             NetworkEvent.Context context = supplier.get();
             ServerPlayer sender = context.getSender();
             if (sender != null) {
                 context.enqueueWork(() -> {
                     if (!(sender.serverLevel().getBlockEntity(packet.pos) instanceof SellBoxBlockEntity box)) return;
                     if (!box.stillValid(sender)) return;
-                    SellBoxSavedData data = SellBoxSavedData.get(sender.server);
-                    if (!box.canEditOwner(sender)) {
-                        sender.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
-                                "qshop_sellbox.message.not_owner"));
-                        return;
-                    }
-                    SellBoxSavedData.PlayerRecord record = data.player(packet.owner);
-                    if (record == null) {
-                        sender.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
-                                "qshop_sellbox.message.no_player"));
-                        return;
-                    }
-                    box.setOwner(record.uuid(), record.name());
+                    box.setOwner(sender.getUUID(), sender.getGameProfile().getName());
                     broadcastOwner(sender.server, box);
                 });
             }

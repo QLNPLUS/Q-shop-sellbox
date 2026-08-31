@@ -4,6 +4,25 @@ All notable changes to QShop Sell Box are documented here.
 
 Release notes are grouped by Minecraft loader when a release supports both Forge and NeoForge.
 
+## [1.3.0] - 2026-08-31
+
+### Forge 1.20.1
+
+### Added
+
+- Added a Claim button that transfers sell box ownership to the player using the container.
+- Added server-side ownership synchronization for all players viewing the same sell box.
+
+### Changed
+
+- Replaced the owner player selection dropdown with direct ownership claiming.
+- Removed the server-wide player choice list from the ownership synchronization payload.
+- Bumped the Forge network protocol for the ownership payload.
+
+### NeoForge 1.21.1
+
+- Aligned the NeoForge and Forge projects to the 1.3.0 release version.
+
 ## [1.1.1] - 2026-08-31
 
 ### NeoForge 1.21.1

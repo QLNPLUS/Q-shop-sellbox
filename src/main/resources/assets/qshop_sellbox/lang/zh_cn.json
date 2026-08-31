@@ -7,6 +7,7 @@
   "qshop_sellbox.owner": "当前归属",
   "qshop_sellbox.owner.none": "未设置",
   "qshop_sellbox.owner.choose": "选择玩家",
+  "qshop_sellbox.owner.claim": "认领",
   "qshop_sellbox.owner.dropdown": "选择归属玩家",
   "qshop_sellbox.owner.uuid": "玩家 UUID: %s",
   "qshop_sellbox.owner.online": "在线",

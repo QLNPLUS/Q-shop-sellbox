@@ -59,8 +59,6 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
     }
 
     private int tab;
-    private boolean dropdown;
-    private int ownerPage;
     private IntervalUnit intervalUnit = IntervalUnit.SECONDS;
     private LayeredEditBox intervalInput;
     private boolean settingsCommitted;
@@ -178,15 +176,7 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
             graphics.pose().popPose();
         }
 
-        if (dropdown) {
-            graphics.pose().pushPose();
-            graphics.pose().translate(0, 0, 600);
-            renderDropdown(graphics, mouseX, mouseY);
-            graphics.flush();
-            graphics.pose().popPose();
-        }
-
-        if (tab == 1 && !dropdown && menu.owner() != null
+        if (tab == 1 && menu.owner() != null
                 && inside(mouseX, mouseY,
                 screenX(SellBoxLayoutDebug.Widget.OWNER_AVATAR, 8),
                 screenY(SellBoxLayoutDebug.Widget.OWNER_AVATAR, 20), 160, 20)) {
@@ -252,7 +242,7 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
 
         int ownerButtonX = screenX(SellBoxLayoutDebug.Widget.OWNER_BUTTON, 8);
         int ownerButtonY = screenY(SellBoxLayoutDebug.Widget.OWNER_BUTTON, 45);
-        Component ownerLabel = Component.translatable("qshop_sellbox.owner.choose");
+        Component ownerLabel = Component.translatable("qshop_sellbox.owner.claim");
         int ownerButtonWidth = buttonWidth(ownerLabel, BUTTON_MIN_WIDTH, imageWidth - 16);
         drawButton(graphics, ownerButtonX, ownerButtonY,
                 ownerLabel, ownerButtonWidth,
@@ -369,25 +359,6 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
         graphics.blit(skin, x, y, 20, 20, 40, 8, 8, 8, 64, 64);
     }
 
-    private void renderDropdown(GuiGraphics graphics, int mouseX, int mouseY) {
-        List<SellBoxMenu.PlayerChoice> choices = menu.playerChoices();
-        int x = screenX(SellBoxLayoutDebug.Widget.OWNER_BUTTON, 8);
-        int y = screenY(SellBoxLayoutDebug.Widget.OWNER_BUTTON, 45) - 1;
-        SellBoxTextures.dropdown(graphics, x, y);
-        drawText(graphics, Component.translatable("qshop_sellbox.owner.dropdown"),
-                x + 5, y + 4, TEXT_COLOR);
-        int start = ownerPage * 4;
-        int visible = Math.min(4, Math.max(0, choices.size() - start));
-        for (int i = 0; i < visible; i++) {
-            SellBoxMenu.PlayerChoice choice = choices.get(start + i);
-            int rowY = y + 18 + i * 18;
-            if (inside(mouseX, mouseY, x + 2, rowY, 156, 18)) {
-                SellBoxTextures.dropdownHover(graphics, x, rowY);
-            }
-            drawText(graphics, trim(choice.name(), 22), x + 7, rowY + 5, TEXT_COLOR);
-        }
-    }
-
     private void sendSettings(SellMode mode, int intervalTicks) {
         int normalized = Math.max(20, Math.min(intervalTicks, SellBoxBlockEntity.MAX_INTERVAL_TICKS));
         menu.setSettingsData(mode, normalized, menu.showActionBarNotification(),
@@ -431,7 +402,6 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
 
     private void setTab(int nextTab) {
         tab = nextTab;
-        dropdown = false;
         SellBoxEmiCompat.setSettingsSuppressed(nextTab == 1);
         SellBoxLayoutDebug.ensureSelected(tab);
         if (intervalInput != null) {
@@ -501,7 +471,7 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
             case OWNER_AVATAR -> new DebugBounds(screenX(widget, 8), screenY(widget, 20), 20, 20);
             case OWNER_INFO -> new DebugBounds(screenX(widget, 34), screenY(widget, 24), 120, font.lineHeight);
             case OWNER_BUTTON -> {
-                Component label = Component.translatable("qshop_sellbox.owner.choose");
+                Component label = Component.translatable("qshop_sellbox.owner.claim");
                 yield new DebugBounds(screenX(widget, 8), screenY(widget, 45),
                         buttonWidth(label, BUTTON_MIN_WIDTH, imageWidth - 16), BUTTON_HEIGHT);
             }
@@ -565,20 +535,12 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
             return true;
         }
         if (tab == 1) {
-            if (dropdown) {
-                int x = screenX(SellBoxLayoutDebug.Widget.OWNER_BUTTON, 8);
-                int y = screenY(SellBoxLayoutDebug.Widget.OWNER_BUTTON, 45) - 1;
-                int start = ownerPage * 4;
-                for (int i = 0; i < Math.min(4, menu.playerChoices().size() - start); i++) {
-                    if (inside(mouseX, mouseY, x + 2, y + 18 + i * 18, 156, 18)) {
-                        SellBoxMenu.PlayerChoice choice = menu.playerChoices().get(start + i);
-                        menu.setOwnerData(choice.uuid(), choice.name(), menu.playerChoices());
-                        SellBoxNetwork.sendSetOwner(menu.pos(), choice.uuid());
-                        dropdown = false;
-                        return true;
-                    }
-                }
-                dropdown = false;
+            Component claimLabel = Component.translatable("qshop_sellbox.owner.claim");
+            int claimWidth = buttonWidth(claimLabel, BUTTON_MIN_WIDTH, imageWidth - 16);
+            int claimX = screenX(SellBoxLayoutDebug.Widget.OWNER_BUTTON, 8);
+            int claimY = screenY(SellBoxLayoutDebug.Widget.OWNER_BUTTON, 45);
+            if (inside(mouseX, mouseY, claimX, claimY, claimWidth, BUTTON_HEIGHT)) {
+                SellBoxNetwork.sendClaimOwner(menu.pos());
                 return true;
             }
             Component unitLabel = Component.translatable(intervalUnit.translationKey);
@@ -594,16 +556,6 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
                     screenX(SellBoxLayoutDebug.Widget.INTERVAL_INPUT, 8),
                     screenY(SellBoxLayoutDebug.Widget.INTERVAL_INPUT, 122), 96, 12)) {
                 intervalInput.setFocused(false);
-            }
-            Component ownerLabel = Component.translatable("qshop_sellbox.owner.choose");
-            int ownerButtonWidth = buttonWidth(ownerLabel, BUTTON_MIN_WIDTH, imageWidth - 16);
-            int ownerButtonX = screenX(SellBoxLayoutDebug.Widget.OWNER_BUTTON, 8);
-            int ownerButtonY = screenY(SellBoxLayoutDebug.Widget.OWNER_BUTTON, 45);
-            if (inside(mouseX, mouseY, ownerButtonX, ownerButtonY,
-                    ownerButtonWidth, BUTTON_HEIGHT)) {
-                dropdown = true;
-                ownerPage = 0;
-                return true;
             }
             Component intervalLabel = Component.translatable("qshop_sellbox.mode.interval");
             Component closedGuiLabel = Component.translatable("qshop_sellbox.mode.closed_gui");
@@ -703,11 +655,6 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        if (tab == 1 && dropdown && !menu.playerChoices().isEmpty()) {
-            int maxPage = (menu.playerChoices().size() - 1) / 4;
-            ownerPage = Mth.clamp(ownerPage + (delta < 0 ? 1 : -1), 0, maxPage);
-            return true;
-        }
         return super.mouseScrolled(mouseX, mouseY, delta);
     }
 

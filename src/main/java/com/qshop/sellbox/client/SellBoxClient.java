@@ -42,7 +42,7 @@ public final class SellBoxClient {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.screen instanceof SellBoxScreen screen
                 && screen.getMenu().pos().equals(packet.pos())) {
-            screen.getMenu().setOwnerData(packet.owner(), packet.ownerName(), packet.choices());
+            screen.getMenu().setOwnerData(packet.owner(), packet.ownerName());
             screen.getMenu().setSettingsData(packet.sellMode(), packet.saleIntervalTicks(),
                     packet.showActionBarNotification(), packet.showChatNotification());
             screen.refreshIntervalInput();
