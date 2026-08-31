@@ -4,6 +4,12 @@ All notable changes to QShop Sell Box are documented here.
 
 Release notes are grouped by Minecraft loader when a release supports both Forge and NeoForge.
 
+## [1.1.1] - 2026-08-31
+
+### Added
+
+- Added a shaped crafting recipe using an iron ingot, a vanilla barrel, and an iron ingot.
+
 ## [1.1.0] - 2026-08-28
 
 ### NeoForge 1.21.1
