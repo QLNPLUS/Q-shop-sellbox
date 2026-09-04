@@ -1,9 +1,12 @@
 package com.qshop.sellbox.kubejs;
 
+import dev.latvian.mods.rhino.BaseFunction;
 import dev.latvian.mods.rhino.Context;
 import dev.latvian.mods.rhino.NativeArray;
 import dev.latvian.mods.rhino.NativeObject;
+import dev.latvian.mods.rhino.Scriptable;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.ByteArrayTag;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.IntArrayTag;
@@ -12,6 +15,8 @@ import net.minecraft.nbt.LongArrayTag;
 import net.minecraft.nbt.NumericTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.ItemStack;
 
 /** Script-friendly view of an item stack used by the dynamic price callback. */
@@ -37,6 +42,16 @@ public final class SellBoxItemView extends NativeObject {
         put(context, "maxDamage", this, getMaxDamage());
         put(context, "isDamaged", this, isDamaged());
         put(context, "nbt", this, getNbt());
+        put(context, "hasTag", this, new BaseFunction() {
+            @Override
+            public Object call(Context callContext, Scriptable scope, Scriptable thisObj, Object[] args) {
+                if (args.length == 0 || args[0] == null
+                        || args[0] == Context.getUndefinedValue()) {
+                    return false;
+                }
+                return hasTag(String.valueOf(args[0]));
+            }
+        });
     }
 
     public String getId() {
@@ -61,6 +76,15 @@ public final class SellBoxItemView extends NativeObject {
 
     public ItemStack getStack() {
         return stack.copy();
+    }
+
+    /** Returns whether this item belongs to the supplied item tag. */
+    public boolean hasTag(String tagId) {
+        if (tagId == null || tagId.isBlank()) return false;
+        String normalized = tagId.charAt(0) == '#' ? tagId.substring(1) : tagId;
+        ResourceLocation location = ResourceLocation.tryParse(normalized);
+        if (location == null) return false;
+        return stack.is(TagKey.create(Registries.ITEM, location));
     }
 
     /** Returns NBT as ordinary JavaScript objects, arrays, strings, and numbers. */

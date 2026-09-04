@@ -4,6 +4,22 @@ All notable changes to QShop Sell Box are documented here.
 
 Release notes are grouped by Minecraft loader when a release supports both Forge and NeoForge.
 
+## [1.4.0] - 2026-09-04
+
+### Forge 1.20.1
+
+#### Fixed
+
+- Fixed dynamic KubeJS price rules for selecting items by tag.
+- Fixed the first five player inventory slots being blocked on the item tab.
+
+### NeoForge 1.21.1
+
+#### Fixed
+
+- Fixed the first five player inventory slots being blocked on the item tab.
+- Ensured dynamic KubeJS price rules can select items by tag.
+
 ## [1.3.0] - 2026-08-31
 
 ### Forge 1.20.1
