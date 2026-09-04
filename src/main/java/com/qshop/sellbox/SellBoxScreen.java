@@ -108,7 +108,9 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
         intervalInput.setTextColorUneditable(TEXT_COLOR);
         intervalInput.setCanLoseFocus(true);
         intervalInput.setValue(Long.toString(intervalUnit.fromTicks(menu.saleIntervalTicks())));
-        intervalInput.setVisible(true);
+        // The input overlaps the player inventory's second row on the item tab.
+        // Keep it out of the widget hit-test tree until the settings tab is active.
+        intervalInput.setVisible(tab == 1);
         addRenderableWidget(intervalInput);
     }
 
