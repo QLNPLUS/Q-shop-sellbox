@@ -9,6 +9,11 @@ on:
         description: Git tag to build and publish
         required: true
         type: string
+      forge_ref:
+        description: Forge branch or tag to build
+        required: false
+        default: main
+        type: string
       neoforge_ref:
         description: NeoForge branch or tag to build
         required: false
@@ -44,7 +49,7 @@ jobs:
       - name: Check out Sell Box Forge source
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.release.tag_name || inputs.tag || github.ref }}
+          ref: ${{ github.event.release.tag_name || inputs.forge_ref || inputs.tag || github.ref }}
           path: Q-shop-sellbox-forge-1.20.1
 
       - name: Check out QShop Forge dependency
