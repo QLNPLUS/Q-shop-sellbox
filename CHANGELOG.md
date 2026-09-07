@@ -4,6 +4,15 @@ All notable changes to QShop Sell Box are documented here.
 
 Release notes are grouped by Minecraft loader when a release supports both Forge and NeoForge.
 
+## [1.5.0] - 2026-09-06
+
+### Forge 1.20.1
+
+#### Added
+
+- Added the asynchronous KubeJS `SellBox.queryPrice(item, callback)` client API.
+- Added the KubeJS `SellBoxEvents.afterSell` event with the sold item, player, dimension, unit price, and currency.
+
 ## [1.4.0] - 2026-09-04
 
 ### Forge 1.20.1

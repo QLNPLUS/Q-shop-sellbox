@@ -4,12 +4,16 @@ import com.qshop.sellbox.NbtStrings;
 import com.qshop.sellbox.PriceQuote;
 import com.qshop.sellbox.SellBoxConfig;
 import com.qshop.sellbox.SellBoxPrices;
+import dev.latvian.mods.kubejs.item.ItemStackJS;
 import dev.latvian.mods.rhino.Context;
 import dev.latvian.mods.rhino.Function;
+import dev.latvian.mods.rhino.NativeObject;
 import dev.latvian.mods.rhino.Scriptable;
 import dev.latvian.mods.rhino.ScriptableObject;
 import dev.latvian.mods.rhino.Wrapper;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
 
 public final class SellBoxApi {
     public static final SellBoxApi INSTANCE = new SellBoxApi();
@@ -64,6 +68,20 @@ public final class SellBoxApi {
         priceFunction(callback, null);
     }
 
+    /** Queries the final client-visible price and invokes the callback asynchronously when needed. */
+    public void queryPrice(Object item, Object callback) {
+        if (!(callback instanceof Function function)) {
+            throw new IllegalArgumentException("SellBox.queryPrice expects a callback function");
+        }
+        ItemStack stack = itemStack(item);
+        if (stack == null || stack.isEmpty()) {
+            throw new IllegalArgumentException("SellBox.queryPrice expects an ItemStack-compatible item");
+        }
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
+                com.qshop.sellbox.client.SellBoxClient.queryPrice(stack,
+                        quote -> invokeClientPriceCallback(function, quote)));
+    }
+
     public void priceFunction(Object callback, String currency) {
         if (!(callback instanceof Function function)) {
             throw new IllegalArgumentException("SellBox.priceFunction expects a function");
@@ -114,6 +132,29 @@ public final class SellBoxApi {
                     + error.getMessage());
             return null;
         }
+    }
+
+    private static void invokeClientPriceCallback(Function function, PriceQuote quote) {
+        Context context = Context.enter();
+        try {
+            Scriptable scope = function.getParentScope();
+            Object result = null;
+            if (quote != null) {
+                NativeObject object = new NativeObject(context);
+                object.put(context, "price", object, quote.price());
+                object.put(context, "currency", object, quote.currency());
+                result = object;
+            }
+            function.call(context, scope, scope, new Object[]{result});
+        } catch (Throwable error) {
+            System.err.println("[QShop SellBox] Client price callback failed: "
+                    + error.getMessage());
+        }
+    }
+
+    private static ItemStack itemStack(Object value) {
+        ItemStack stack = ItemStackJS.of(value);
+        return stack.isEmpty() ? null : stack.copy();
     }
 
     private static void debugInput(Context context, Object event, ItemStack stack) {
