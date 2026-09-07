@@ -74,4 +74,38 @@ SellBox.price(event => {
 
 动态函数的结果在服务端计算，容器出售时直接使用该结果。客户端显示价格时会把物品和完整 NBT 发回服务端查询，再显示服务端返回的价格，不会在客户端执行 KubeJS 脚本。动态函数存在时，它是唯一价格来源；没有动态函数时才使用配置文件的 `priceRules` 和 `nbtMultipliers`。
 
+客户端脚本也可以异步查询与售货箱相同的最终价格。`result` 为 `null` 表示没有匹配价格；否则包含 `result.price` 和 `result.currency`：
+
+```js
+ItemEvents.tooltip(event => {
+  event.addAdvanced(/minecards:card_/, (item, advanced, text) => {
+    SellBox.queryPrice(item, result => {
+      if (result) {
+        text.add(`售价: ${result.price} ${result.currency}`)
+      }
+    })
+  })
+})
+```
+
+静态价格会直接回调；动态价格第一次查询需要等待服务端响应，之后会使用客户端缓存。客户端脚本不能把服务端脚本中的 `global` 变量直接当作本地变量读取。
+
+物品出售完成后，服务端脚本可以监听出售事件：
+
+```js
+SellBoxEvents.afterSell(event => {
+  const item = event.item
+  const player = event.player
+  const level = event.level
+  const itemPrice = event.itemPrice
+  const currency = event.currency
+
+  if (player) {
+    console.log(`${player.getGameProfile().getName()} sold ${item.count}x ${item.id}`)
+  }
+})
+```
+
+`itemPrice` 是该物品的单价，`currency` 是货币 ID。事件在物品扣除并完成入账后触发；归属玩家离线时 `player` 为 `null`，但维度和物品信息仍然可用。
+
 修改脚本后使用 KubeJS 的服务器重载流程，Java 插件首次安装或升级仍需要重启。

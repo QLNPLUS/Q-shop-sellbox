@@ -19,8 +19,11 @@ import net.neoforged.fml.common.EventBusSubscriber;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 @EventBusSubscriber(modid = SellBoxMod.MODID, value = Dist.CLIENT)
 public final class SellBoxClient {
@@ -31,6 +34,7 @@ public final class SellBoxClient {
     private static final Map<String, PriceQuote> DYNAMIC_PRICE_CACHE = new HashMap<>();
     private static final Set<String> DYNAMIC_NO_PRICE = new HashSet<>();
     private static final Map<Integer, String> PENDING_PRICE_REQUESTS = new HashMap<>();
+    private static final Map<String, List<Consumer<PriceQuote>>> PRICE_CALLBACKS = new HashMap<>();
 
     private SellBoxClient() {}
 
@@ -58,16 +62,58 @@ public final class SellBoxClient {
         DYNAMIC_PRICE_CACHE.clear();
         DYNAMIC_NO_PRICE.clear();
         PENDING_PRICE_REQUESTS.clear();
+        PRICE_CALLBACKS.clear();
     }
 
     public static void applyPriceResult(SellBoxNetwork.PriceResultPacket packet) {
         String key = PENDING_PRICE_REQUESTS.remove(packet.requestId());
         if (key == null) return;
+        PriceQuote quote = null;
         if (packet.found()) {
-            DYNAMIC_PRICE_CACHE.put(key, new PriceQuote(packet.price(), packet.currency()));
+            quote = new PriceQuote(packet.price(), packet.currency());
+            DYNAMIC_PRICE_CACHE.put(key, quote);
         } else {
             DYNAMIC_NO_PRICE.add(key);
         }
+        List<Consumer<PriceQuote>> callbacks = PRICE_CALLBACKS.remove(key);
+        if (callbacks != null) {
+            for (Consumer<PriceQuote> callback : callbacks) callback.accept(quote);
+        }
+    }
+
+    /** Queries a client-visible price, using the local cache or the server when necessary. */
+    public static void queryPrice(ItemStack stack, Consumer<PriceQuote> callback) {
+        if (stack == null || stack.isEmpty() || callback == null) return;
+        ItemStack copy = stack.copy();
+        String key = priceKey(copy);
+        if (!hasDynamicPriceFunction) {
+            callback.accept(SellBoxPrices.resolveClient(copy));
+            return;
+        }
+        PriceQuote cached = DYNAMIC_PRICE_CACHE.get(key);
+        if (cached != null) {
+            callback.accept(cached);
+            return;
+        }
+        if (DYNAMIC_NO_PRICE.contains(key)) {
+            callback.accept(null);
+            return;
+        }
+        if (Minecraft.getInstance().getConnection() == null) {
+            callback.accept(null);
+            return;
+        }
+        PRICE_CALLBACKS.computeIfAbsent(key, ignored -> new ArrayList<>()).add(callback);
+        if (PENDING_PRICE_REQUESTS.containsValue(key)) {
+            return;
+        }
+        int requestId = nextPriceRequestId++;
+        if (requestId < 0) {
+            nextPriceRequestId = 1;
+            requestId = 0;
+        }
+        PENDING_PRICE_REQUESTS.put(requestId, key);
+        SellBoxNetwork.sendPriceQuery(requestId, copy);
     }
 
     @SubscribeEvent
@@ -128,5 +174,6 @@ public final class SellBoxClient {
         DYNAMIC_PRICE_CACHE.clear();
         DYNAMIC_NO_PRICE.clear();
         PENDING_PRICE_REQUESTS.clear();
+        PRICE_CALLBACKS.clear();
     }
 }

@@ -5,10 +5,13 @@ import com.qshop.currency.CurrencyRegistry;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -19,8 +22,10 @@ public final class SellBoxSaleService {
     private SellBoxSaleService() {}
 
     public static void sellContents(SellBoxBlockEntity box) {
-        if (box.owner() == null || box.getLevel() == null || box.getLevel().getServer() == null) return;
+        if (box.owner() == null || !(box.getLevel() instanceof ServerLevel level)
+                || level.getServer() == null) return;
         Map<String, Double> earnings = new LinkedHashMap<>();
+        List<SoldItem> soldItems = new ArrayList<>();
         int itemCount = 0;
         for (int slot = 0; slot < box.items().getSlots(); slot++) {
             ItemStack stack = box.items().getStackInSlot(slot);
@@ -31,6 +36,7 @@ public final class SellBoxSaleService {
             if (removed.isEmpty()) continue;
             itemCount += removed.getCount();
             earnings.merge(quote.currency(), quote.price() * removed.getCount(), Double::sum);
+            soldItems.add(new SoldItem(removed, quote.price(), quote.currency()));
         }
         if (earnings.isEmpty()) return;
 
@@ -41,6 +47,10 @@ public final class SellBoxSaleService {
             // QShop's UUID overload writes directly to an offline player's wallet data.
             QShopAddonApi.currency().deposit(server, owner, entry.getKey(), entry.getValue(),
                     SOURCE, box.getBlockPos());
+        }
+        for (SoldItem soldItem : soldItems) {
+            SellBoxSaleEvents.post(soldItem.item(), online, level,
+                    soldItem.itemPrice(), soldItem.currency());
         }
         if (itemCount > 0 && !earnings.isEmpty()) {
             var first = earnings.entrySet().iterator().next();
@@ -57,4 +67,6 @@ public final class SellBoxSaleService {
                 ? String.format(java.util.Locale.ROOT, "%.0f", value)
                 : String.format(java.util.Locale.ROOT, "%.2f", value);
     }
+
+    private record SoldItem(ItemStack item, double itemPrice, String currency) {}
 }
