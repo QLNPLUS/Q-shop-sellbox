@@ -42,7 +42,8 @@ env:
 
 jobs:
   publish-forge:
-    if: ${{ github.event_name == 'release' || inputs.loader == 'all' || inputs.loader == 'forge' }}
+    needs: publish-neoforge
+    if: ${{ always() && (github.event_name == 'release' || inputs.loader == 'all' || inputs.loader == 'forge') && (needs.publish-neoforge.result == 'success' || needs.publish-neoforge.result == 'skipped') }}
     runs-on: ubuntu-latest
 
     steps:
