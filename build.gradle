@@ -43,8 +43,17 @@ def addOptionalMod = { String configuration, String notation, String pattern ->
     dependencies.add(configuration, files ? project.files(files) : notation)
 }
 
+// QShop 依赖 jar：路径来自 gradle.properties 的 qshop_jar，可用 -Pqshop_jar=<path> 覆盖。
+// 缺失时立即失败并给出可操作提示，不要退化成"一堆类找不到"的编译错误。
+def qshopJarFile = file(findProperty('qshop_jar') ?:
+        '../../q_shop/neoforge-1.21.1/build/libs/qshop-neoforge-1.21.1-1.7.0.jar')
+if (!qshopJarFile.isFile()) {
+    throw new GradleException("未找到 QShop 依赖 jar: ${qshopJarFile}\n" +
+            "请先构建 QShop（D:\\projects\\q_shop\\neoforge-1.21.1），或用 -Pqshop_jar=<path> 指定。")
+}
+
 dependencies {
-    compileOnly files('../Q-shop-neoforge-1.21.1/build/libs/qshop-neoforge-1.21.1-1.4.0.jar')
+    compileOnly files(qshopJarFile)
     addOptionalMod('compileOnly', "dev.latvian.mods:kubejs-neoforge:${kubejs_version}", 'kubejs-neoforge-*.jar')
     addOptionalMod('compileOnly', 'dev.latvian.mods:rhino:2101.2.7-build.85', 'rhino-*.jar')
 }
