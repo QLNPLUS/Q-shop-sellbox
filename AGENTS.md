@@ -98,6 +98,8 @@ git tag 是仓库级唯一的，而本仓库是锁步发布 —— 只打一个 
 - 使用各自的 Gradle wrapper（`.\gradlew.bat`），不要用系统 gradle，也不要用 `java -version` 默认的那个 JDK。
 - 发布产物名：`qshop-sellbox-forge-1.20.1-<ver>.jar` / `qshop_sellbox-neoforge-1.21.1-<ver>.jar`。
 - 构建前确认被引用的 QShop jar 已存在（缺失会 fail-fast 报错，不是静默跳过）。
+- `pack.mcmeta` 的 `pack_format` 必须对目标 MC 的**资源包**格式：1.20.1 = **15**，1.21.1 = **34**。不要写成数据包格式（1.21.1 的数据包格式是 48 —— 声明过高会让包被判为 incompatible；本仓库 1.21.1 分支曾误用 48，已在 `1561c92` 修正）。`tools\verify-release-jars.ps1` 会核验这一项。
+- **本机 `piston-meta.mojang.com` / `libraries.minecraft.net` 不可达**：Gradle 依赖解析可用 `--offline` 走缓存，但 ForgeGradle 的 `downloadMCMeta` / `downloadAssets` 不走 Gradle 离线开关，会直接连超时。见「已知遗留问题」第 4 条。
 
 ## 冒烟测试
 
@@ -129,3 +131,5 @@ git tag 是仓库级唯一的，而本仓库是锁步发布 —— 只打一个 
 1. **历史提交是手工重写的遗产**：`3fb0101` 之后的 13 / 11 个提交在两条分支间没有 patch 级对应关系，跨分支比对只能靠内容核对，不能靠 `git cherry`。
 2. **两条分支功能面尚未逐条核对**：抽查（如"归属声明"功能）未发现缺失，但未做完整清单比对。搬运新功能前先确认目标分支是否已有该功能的平行实现。
 3. **共享率已超抽 `common/` 的阈值**：同名 Java 文件 27/27，其中字节相同 8、差异 ≤3 行 4、4–15 行 4 → `(8+4+4)/27 = 59% > 50%`。按 skill 的量化判据，本项目**应当**抽 `common/` 共享模块（模型 B：聚合 `main` 分支）。这是一次结构性重构（需先把平台调用点收敛到 shim 文件，物品数据这条已经被 QShop 的 `ItemStackData` 部分解决了），属于独立任务，未在本轮整理中执行。
+4. **Forge 的 `runServer` 加载不了 QShop 的 Forge 生产 jar（既有问题，与 QShop 版本无关）**：`run\mods\` 里放 QShop 的 forge 产物（1.4.0、1.7.0 均实测）会在 `common_setup` 抛 `NoSuchMethodError`，一次一个方法（1.7.0 是 `SoundEvent.m_262824_`，1.4.0 是 `Commands.m_82127_`）。原因是 Forge 生产 jar 用 SRG 名、dev 运行时按官方名解析，而这些方法的 SRG id 随 Forge 版本重新分配。**NeoForge 侧不受影响**（其生产 jar 不做 SRG 重映射），所以 `neoforge-1.21.1` 的服务端冒烟能通过。要让 Forge 冒烟也通过，需要 QShop 提供未 reobf 的 dev 产物，或把 QShop 的 classes 直接放进 run classpath。
+5. **本机 Mojang 主机不可达**：`piston-meta.mojang.com` / `libraries.minecraft.net` 连不通 → ForgeGradle 的 `downloadMCMeta`、`downloadAssets`、`extractNatives` 会失败或挂起，且 `--offline` 对它们无效（它们不走 Gradle 的离线开关）。绕过方式：`-x downloadMCMeta -x downloadAssets`，并先把 `%USERPROFILE%\.gradle\caches\forge_gradle\minecraft_repo\versions\1.20.1\version.json` 复制到 `build\downloadMCMeta\version.json` 满足 `extractNatives` 的输入校验。NeoForge 侧用 neoformruntime 缓存，`--offline` 即可跑通。
