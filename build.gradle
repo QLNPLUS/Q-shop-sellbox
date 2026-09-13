@@ -37,9 +37,18 @@ repositories {
     maven { url = 'https://maven.fabricmc.net/' }
 }
 
+// QShop 依赖 jar：路径来自 gradle.properties 的 qshop_jar，可用 -Pqshop_jar=<path> 覆盖。
+// 缺失时立即失败并给出可操作提示，不要退化成"一堆类找不到"的编译错误。
+def qshopJarFile = file(findProperty('qshop_jar') ?:
+        '../../q_shop/forge-1.20.1/build/libs/qshop-forge-1.20.1-1.7.0.jar')
+if (!qshopJarFile.isFile()) {
+    throw new GradleException("未找到 QShop 依赖 jar: ${qshopJarFile}\n" +
+            "请先构建 QShop（D:\\projects\\q_shop\\forge-1.20.1），或用 -Pqshop_jar=<path> 指定。")
+}
+
 dependencies {
     minecraft 'net.minecraftforge:forge:1.20.1-47.4.20'
-    compileOnly fg.deobf(files('../Q-shop-forge-1.20.1/build/libs/qshop-forge-1.20.1-1.4.0.jar'))
+    compileOnly fg.deobf(files(qshopJarFile))
 
     // Optional at runtime. The plugin is discovered only when KubeJS is installed.
     compileOnly fg.deobf('dev.latvian.mods:kubejs-forge:2001.6.5-build.14')
