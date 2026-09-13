@@ -331,15 +331,17 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
     }
 
     private void drawAvatar(GuiGraphicsExtractor graphics, int x, int y, UUID owner) {
+        // 26.x 移除了 textures/entity/steve.png，默认皮肤在 entity/player/<model>/ 下。
         Identifier skin = Identifier.fromNamespaceAndPath(
-                "minecraft", "textures/entity/steve.png");
+                "minecraft", "textures/entity/player/wide/steve.png");
         if (owner != null && Minecraft.getInstance().getConnection() != null) {
             PlayerInfo info = Minecraft.getInstance().getConnection().getPlayerInfo(owner);
             if (info != null) skin = info.getSkin().body().texturePath();
         }
         // Face, then the hat layer on top.
-        graphics.blit(RenderPipelines.GUI_TEXTURED, skin, x, y, 20, 20, 8, 8, 8, 8, 64, 64);
-        graphics.blit(RenderPipelines.GUI_TEXTURED, skin, x, y, 20, 20, 40, 8, 8, 8, 64, 64);
+        // 26.x 参数顺序：(x, y, u, v, width, height, srcWidth, srcHeight, texWidth, texHeight)
+        graphics.blit(RenderPipelines.GUI_TEXTURED, skin, x, y, 8, 8, 20, 20, 8, 8, 64, 64);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, skin, x, y, 40, 8, 20, 20, 8, 8, 64, 64);
     }
 
     private void sendSettings(SellMode mode, int intervalTicks) {

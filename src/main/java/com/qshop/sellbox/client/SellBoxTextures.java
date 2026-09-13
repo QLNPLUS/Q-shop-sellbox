@@ -75,22 +75,24 @@ public final class SellBoxTextures {
                 textureWidth, textureHeight);
 
         if (innerWidth > 0) {
-            graphics.blit(RenderPipelines.GUI_TEXTURED, texture, x + border, y, innerWidth, border,
-                    border, 0, innerTextureWidth, border, textureWidth, textureHeight);
-            graphics.blit(RenderPipelines.GUI_TEXTURED, texture, x + border, y + height - border, innerWidth, border,
-                    border, textureHeight - border, innerTextureWidth, border,
+            // 26.x 的 blit 重载参数顺序是 (x, y, u, v, width, height, srcWidth, srcHeight, texWidth, texHeight)，
+            // 与 1.21.1 的 (x, y, width, height, u, v, uWidth, vHeight, ...) 不同 —— UV 在前，尺寸在后。
+            graphics.blit(RenderPipelines.GUI_TEXTURED, texture, x + border, y,
+                    border, 0, innerWidth, border, innerTextureWidth, border, textureWidth, textureHeight);
+            graphics.blit(RenderPipelines.GUI_TEXTURED, texture, x + border, y + height - border,
+                    border, textureHeight - border, innerWidth, border, innerTextureWidth, border,
                     textureWidth, textureHeight);
         }
         if (innerHeight > 0) {
-            graphics.blit(RenderPipelines.GUI_TEXTURED, texture, x, y + border, border, innerHeight,
-                    0, border, border, innerTextureHeight, textureWidth, textureHeight);
-            graphics.blit(RenderPipelines.GUI_TEXTURED, texture, x + width - border, y + border, border, innerHeight,
-                    textureWidth - border, border, border, innerTextureHeight,
+            graphics.blit(RenderPipelines.GUI_TEXTURED, texture, x, y + border,
+                    0, border, border, innerHeight, border, innerTextureHeight, textureWidth, textureHeight);
+            graphics.blit(RenderPipelines.GUI_TEXTURED, texture, x + width - border, y + border,
+                    textureWidth - border, border, border, innerHeight, border, innerTextureHeight,
                     textureWidth, textureHeight);
         }
         if (innerWidth > 0 && innerHeight > 0) {
-            graphics.blit(RenderPipelines.GUI_TEXTURED, texture, x + border, y + border, innerWidth, innerHeight,
-                    border, border, innerTextureWidth, innerTextureHeight,
+            graphics.blit(RenderPipelines.GUI_TEXTURED, texture, x + border, y + border,
+                    border, border, innerWidth, innerHeight, innerTextureWidth, innerTextureHeight,
                     textureWidth, textureHeight);
         }
     }
