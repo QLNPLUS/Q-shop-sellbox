@@ -99,7 +99,7 @@ git tag 是仓库级唯一的，而本仓库是锁步发布 —— 只打一个 
 - 发布产物名：`qshop-sellbox-forge-1.20.1-<ver>.jar` / `qshop_sellbox-neoforge-1.21.1-<ver>.jar`。
 - 构建前确认被引用的 QShop jar 已存在（缺失会 fail-fast 报错，不是静默跳过）。
 - `pack.mcmeta` 的 `pack_format` 必须对目标 MC 的**资源包**格式：1.20.1 = **15**，1.21.1 = **34**。不要写成数据包格式（1.21.1 的数据包格式是 48 —— 声明过高会让包被判为 incompatible；本仓库 1.21.1 分支曾误用 48，已在 `1561c92` 修正）。`tools\verify-release-jars.ps1` 会核验这一项。
-- **本机 `piston-meta.mojang.com` / `libraries.minecraft.net` 不可达**：Gradle 依赖解析可用 `--offline` 走缓存，但 ForgeGradle 的 `downloadMCMeta` / `downloadAssets` 不走 Gradle 离线开关，会直接连超时。见「已知遗留问题」第 4 条。
+- **本机 `piston-meta.mojang.com` / `libraries.minecraft.net` 不可达**：Gradle 依赖解析可用 `--offline` 走缓存，但 ForgeGradle 的 `downloadMCMeta` / `downloadAssets` 不走 Gradle 离线开关，会直接连超时。见「已知遗留问题」第 5 条。
 
 ## 冒烟测试
 
