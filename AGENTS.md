@@ -71,7 +71,10 @@ git -C D:\projects\q_shop_sellbox\<目标worktree> cherry-pick -x <源分支SHA>
 | 标识符 | `ResourceLocation` | `Identifier`（`Identifier.fromNamespaceAndPath`） |
 | 渲染类 | `GuiGraphics` | `GuiGraphicsExtractor` |
 | 屏幕钩子 | `render` / `renderBg` / `renderLabels` / `renderTooltip` | `extractRenderState` / `extractBackground` / `extractLabels` / `extractTooltip` |
-| 贴图 | `blit(tex, x, y, u, v, w, h, tw, th)` | `blit(RenderPipelines.GUI_TEXTURED, tex, ...)`（参数顺序不变，仅前置 pipeline） |
+| 贴图（目标=源尺寸） | `blit(tex, x, y, u, v, w, h, tw, th)` | `blit(pipeline, tex, x, y, u, v, w, h, tw, th)` —— 仅前置 pipeline |
+| 贴图（源尺寸≠目标尺寸） | `blit(tex, x, y, w, h, u, v, uW, vH, texW, texH)` | **`blit(pipeline, tex, x, y, u, v, w, h, uW, vH, texW, texH)` —— UV 提到尺寸之前**。照抄旧顺序能编译，但会得到零面积目标（如 `4x0`）与越界 UV，表现为九宫格边框碎裂、线条拉伸 |
+| 物品模型 | `models/item/<id>.json` 即可 | **必须再加 `assets/<ns>/items/<id>.json`**（`{"model":{"type":"minecraft:model","model":"<ns>:item/<id>"}}`）；缺它物品图标完全不渲染，`models/item/` 只是被它引用的模型 |
+| 默认玩家皮肤 | `textures/entity/steve.png` | `textures/entity/player/wide/steve.png`（旧路径已删除；皮肤访问器为 `PlayerSkin.body().texturePath()`） |
 | 文字 | `drawString` / `drawCenteredString` | `text` / `centeredText`（**必须完整 ARGB**，六位色值 alpha=0 会不可见） |
 | 物品 | `renderItem` / `renderItemDecorations` | `item` / `itemDecorations` |
 | tooltip | `renderTooltip` | `setTooltipForNextFrame` |
@@ -159,5 +162,5 @@ git tag 是仓库级唯一的，而本仓库是锁步发布 —— 只打一个 
 3. **共享率已超抽 `common/` 的阈值**：同名 Java 文件 27/27，其中字节相同 8、差异 ≤3 行 4、4–15 行 4 → `(8+4+4)/27 = 59% > 50%`。按 skill 的量化判据，本项目**应当**抽 `common/` 共享模块（模型 B：聚合 `main` 分支）。这是一次结构性重构（需先把平台调用点收敛到 shim 文件，物品数据这条已经被 QShop 的 `ItemStackData` 部分解决了），属于独立任务，未在本轮整理中执行。
 4. **Forge 的 `runServer` 加载不了 QShop 的 Forge 生产 jar（既有问题，与 QShop 版本无关）**：`run\mods\` 里放 QShop 的 forge 产物（1.4.0、1.7.0 均实测）会在 `common_setup` 抛 `NoSuchMethodError`，一次一个方法（1.7.0 是 `SoundEvent.m_262824_`，1.4.0 是 `Commands.m_82127_`）。原因是 Forge 生产 jar 用 SRG 名、dev 运行时按官方名解析，而这些方法的 SRG id 随 Forge 版本重新分配。**NeoForge 侧不受影响**（其生产 jar 不做 SRG 重映射），所以 `neoforge-1.21.1` 的服务端冒烟能通过。要让 Forge 冒烟也通过，需要 QShop 提供未 reobf 的 dev 产物，或把 QShop 的 classes 直接放进 run classpath。
 5. **本机 Mojang 主机不可达**：`piston-meta.mojang.com` / `libraries.minecraft.net` 连不通 → ForgeGradle 的 `downloadMCMeta`、`downloadAssets`、`extractNatives` 会失败或挂起，且 `--offline` 对它们无效（它们不走 Gradle 的离线开关）。绕过方式：`-x downloadMCMeta -x downloadAssets`，并先把 `%USERPROFILE%\.gradle\caches\forge_gradle\minecraft_repo\versions\1.20.1\version.json` 复制到 `build\downloadMCMeta\version.json` 满足 `extractNatives` 的输入校验。NeoForge 侧用 neoformruntime 缓存，`--offline` 即可跑通。
-6. **`neoforge-1.26.1.2` 只验证到"服务端能起来"**：构建、静态核验、`runServer` 到 `Done` 全部通过（QShop 1.7.1 + Sell Box 1.5.0，0 缺失依赖），但 **GUI 尚未在真实客户端里跑过**。26.x 的渲染模型改成了 render-state 抽取（`extractRenderState` + `nextStratum`），`forge-gui-layering` skill 明确要求：迁移后的 GUI 至少在一次真实客户端运行中核验九宫格面板、文字较多的对话框、物品/tooltip、顶角按钮 —— **编译通过不能作为绘制正确的证据**。首次在客户端测试时重点看：面板边框是否碎裂、文字是否可见（ARGB）、tooltip 位置、设置页与物品页切换时的遮挡关系。
+6. **`neoforge-1.26.1.2` 的客户端渲染修过一轮，但仍需一次真实客户端复测**：客户端实测发现三个问题，均已修复（提交 `64b76e0`）——① 九宫格内拉伸沿用了 1.21.1 的参数顺序，按钮边框碎裂（新签名 UV 在前，见上表）；② 头像 blit 同样顺序错误，且默认皮肤 `textures/entity/steve.png` 在 26.x 已删除（改为 `entity/player/wide/steve.png`）；③ 缺 `assets/qshop_sellbox/items/sell_box.json` 客户端物品定义，物品图标完全不渲染。`tools\verify-release-jars.ps1` 已加入"物品定义存在且能解析到产物内的模型"这一项。**修复后的画面仍需在一次真实客户端里确认** —— 按 `forge-gui-layering` skill，编译通过与静态核验都不能作为绘制正确的证据。复测重点：按钮/输入框/复选框边框（九宫格）、面板与 owner 背景、页签贴图与物品图标、头像皮肤、tooltip 位置、物品页↔设置页切换时的遮挡关系。
 7. **`neoforge-1.26.1.2` 仅存在于本地**：远端尚无该分支，需要时 `git push -u origin neoforge-1.26.1.2`。在推送之前 `origin` 上的三分支 CI 契约只覆盖前两条。
