@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.release.tag_name || inputs.tag || github.ref }}
-          path: Q-shop-sellbox-neoforge-1.21.1
+          path: sellbox-neoforge-1.21.1
 
       - name: Check out QShop NeoForge dependency
         uses: actions/checkout@v4
@@ -51,7 +51,7 @@ jobs:
         run: |
           sed -i -E '/^systemProp\.(http|https)\.proxy(Host|Port)=|^org\.gradle\.java\.home=/d' \
             Q-shop-neoforge-1.21.1/gradle.properties \
-            Q-shop-sellbox-neoforge-1.21.1/gradle.properties
+            sellbox-neoforge-1.21.1/gradle.properties
 
       - name: Prepare CurseForge version
         env:
@@ -79,11 +79,13 @@ jobs:
 
       - name: Build Sell Box NeoForge mod
         run: |
-          chmod +x Q-shop-sellbox-neoforge-1.21.1/gradlew
-          (cd Q-shop-sellbox-neoforge-1.21.1 && ./gradlew build --no-daemon)
+          QSHOP_JAR="$(ls Q-shop-neoforge-1.21.1/build/libs/qshop-neoforge-1.21.1-*.jar | grep -v sources | head -1)"
+          test -f "$QSHOP_JAR" || { echo "QShop NeoForge jar not found under Q-shop-neoforge-1.21.1/build/libs"; exit 1; }
+          chmod +x sellbox-neoforge-1.21.1/gradlew
+          (cd sellbox-neoforge-1.21.1 && ./gradlew build --no-daemon -Pqshop_jar="../$QSHOP_JAR")
 
       - name: Prepare current NeoForge changelog
-        working-directory: Q-shop-sellbox-neoforge-1.21.1
+        working-directory: sellbox-neoforge-1.21.1
         env:
           RELEASE_VERSION: ${{ env.RELEASE_VERSION }}
         run: |
@@ -110,11 +112,11 @@ jobs:
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           github-tag: ${{ env.RELEASE_VERSION }}
-          files: Q-shop-sellbox-neoforge-1.21.1/build/libs/qshop_sellbox-neoforge-1.21.1-*.jar
+          files: sellbox-neoforge-1.21.1/build/libs/qshop_sellbox-neoforge-1.21.1-*.jar
           version: ${{ env.CURSEFORGE_VERSION }}
           name: QShop Sell Box ${{ env.CURSEFORGE_VERSION }} NeoForge 1.21.1
           version-type: release
-          changelog-file: Q-shop-sellbox-neoforge-1.21.1/build/curseforge-changelog.md
+          changelog-file: sellbox-neoforge-1.21.1/build/curseforge-changelog.md
           loaders: neoforge
           game-versions: 1.21.1
           java: 21
