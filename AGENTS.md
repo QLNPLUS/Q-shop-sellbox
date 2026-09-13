@@ -1,8 +1,8 @@
 # QShop Sell Box — 多版本开发约定
 
-本仓库是**一个 git 仓库、两条版本分支**，每条分支各有独立 worktree。改动默认为"先落一条分支、测试通过后再迁移到另一条"。
+本仓库是**一个 git 仓库、三条版本分支**，每条分支各有独立 worktree。改动默认为"先落一条分支、测试通过后再迁移到其他分支"。
 
-**本文件在两条分支上内容完全相同。** 修改时必须两条分支同步提交同一内容（在一条分支提交后用 `git cherry-pick -x` 搬到另一条），否则各分支上的 AI 会读到不同约定。
+**本文件在三条分支上内容完全相同。** 修改时必须三条分支同步提交同一内容（在一条分支提交后用 `git cherry-pick -x` 搬到其余分支），否则各分支上的 AI 会读到不同约定。
 
 ## 分支矩阵
 
@@ -10,12 +10,13 @@
 |---|---|---|---|---|---|---|
 | `forge-1.20.1` | `D:\projects\q_shop_sellbox\forge-1.20.1` | Forge | 1.20.1 | **17** | 8.1.1 | ForgeGradle `[6.0.16,6.2)` |
 | `neoforge-1.21.1` | `D:\projects\q_shop_sellbox\neoforge-1.21.1` | NeoForge | 1.21.1 | **21** | 8.8 | ModDevGradle 2.0.141 |
+| `neoforge-1.26.1.2` | `D:\projects\q_shop_sellbox\neoforge-1.26.1.2` | NeoForge | 26.1.2 | **25** | 9.2.1 | ModDevGradle 2.0.146 |
 
-- 主工作树（持有 `.git` **目录**）是 `D:\projects\q_shop_sellbox\forge-1.20.1`；`neoforge-1.21.1` 是它的 linked worktree（`.git` 是**文件**，指向 `forge-1.20.1\.git\worktrees\neoforge-1.21.1`）。两者共享同一个对象库，因此在一个 worktree 里 commit 的提交，可直接在另一个 worktree 里 `cherry-pick`，无需 fetch。
+- 主工作树（持有 `.git` **目录**）是 `D:\projects\q_shop_sellbox\forge-1.20.1`；另两条是它的 linked worktree（`.git` 是**文件**，指向 `forge-1.20.1\.git\worktrees\...`）。三者共享同一个对象库，因此在一个 worktree 里 commit 的提交，可直接在另一个 worktree 里 `cherry-pick`，无需 fetch。
 - 唯一远程是 `origin`（`https://github.com/QLNPLUS/Q-shop-sellbox.git`）。本仓库**没有 fork 远程**，推送目标就是 `origin`。
-- 两条分支均 tracking **同名**远程分支，推送用裸 `git push` 即可。`origin/HEAD` 与 GitHub 默认分支都是 **`forge-1.20.1`**（2026-09-13 由 `main` 改名而来；旧名 `main`、遗留名 `neoforge` 已不再使用）。
+- 三条分支均 tracking **同名**远程分支（`neoforge-1.26.1.2` 目前仅存在于本地，需要时用 `git push -u origin neoforge-1.26.1.2` 建立）。`origin/HEAD` 与 GitHub 默认分支都是 **`forge-1.20.1`**（2026-09-13 由 `main` 改名而来；旧名 `main`、遗留名 `neoforge` 已不再使用）。
 - 目录名、本地分支名、远程分支名三者一致。但仍建议用 `git rev-parse --abbrev-ref HEAD` 判定当前分支，不要相信目录名。
-- 两条分支已漂移：分家于 `3fb0101 (Release QShop Sell Box 1.0.1)`，此后 `forge-1.20.1` 独有 13 个提交、`neoforge-1.21.1` 独有 11 个提交。
+- 三条分支均已漂移：分家于 `3fb0101 (Release QShop Sell Box 1.0.1)`，此后 `forge-1.20.1` 独有 13 个提交、`neoforge-1.21.1` 独有 11 个提交；**`neoforge-1.26.1.2` 于 `d4e29ae (1.5.0)` 从 `neoforge-1.21.1` 分出**（同加载器基线：实测 1.21.1 → 26.1.2 改动 1743 行，而 1.20.1 → 26.1.2 需 2933 行）。
 
 ## 工作流：加新功能（默认流程，不必每次询问）
 
@@ -51,16 +52,37 @@ git -C D:\projects\q_shop_sellbox\<目标worktree> cherry-pick -x <源分支SHA>
 
 ## 已知平台鸿沟（真实差异，不要试图消除）
 
-| | Forge 1.20.1 | NeoForge 1.21.1 |
+| | Forge 1.20.1 | NeoForge 1.21.1 | NeoForge 26.1.2 |
+|---|---|---|---|
+| 网络 | `SimpleChannel` / `NetworkRegistry` | `CustomPacketPayload` + `PayloadRegistrar` | 同 1.21.1；客户端发送改用 `ClientPacketDistributor.sendToServer` |
+| 配置 | `ForgeConfigSpec` | `ModConfigSpec` | 同 1.21.1 |
+| 元数据 | `META-INF/mods.toml` | `META-INF/neoforge.mods.toml` | 同 1.21.1 |
+| 物品数据 | `ItemStack.getTag()` | `com.qshop.util.ItemStackData.getCustomTag(stack)` | 同 1.21.1 |
+| 物品能力 | `Capabilities.ItemHandler.BLOCK` | 同左 | **`Capabilities.Item.BLOCK`（承载 `ResourceHandler<ItemResource>`）**；方块实体实现原版 `Container`，用 `VanillaContainerWrapper` 桥接 |
+| 数据包目录 | `data/<ns>/recipes`、`loot_tables` | `data/<ns>/recipe`、`loot_table` | 同 1.21.1 |
+| 构建插件 | ForgeGradle，依赖要 `fg.deobf(...)` | ModDevGradle，依赖用裸 `files(...)` | ModDevGradle 2.0.146 |
+| 注册 | `DeferredRegister`（`net.minecraftforge.*`） | `DeferredRegister`（`net.neoforged.neoforge.*`） | 用 `registerBlock` / `registerSimpleBlockItem`（26.x 要求显式 id，助手会自动设置） |
+| KubeJS | `kubejs-forge 2001.6.5-build.14` | `kubejs-neoforge 2101.7.2-build.374` | `kubejs-neoforge 26.1.2-8.0.6`（新一代 API） |
+
+**26.1.2 的代码级差异（搬运时必须逐个核对，不要照抄 1.21.1）**：
+
+| 主题 | 1.21.1 | 26.1.2 |
 |---|---|---|
-| 网络 | `SimpleChannel` / `NetworkRegistry` | `CustomPacketPayload` + `PayloadRegistrar` |
-| 配置 | `ForgeConfigSpec` | `ModConfigSpec` |
-| 元数据 | `META-INF/mods.toml` | `META-INF/neoforge.mods.toml` |
-| 物品数据 | `ItemStack.getTag()` | `com.qshop.util.ItemStackData.getCustomTag(stack)` |
-| 数据包目录 | `data/<ns>/recipes`、`loot_tables` | `data/<ns>/recipe`、`loot_table` |
-| 构建插件 | ForgeGradle，依赖要 `fg.deobf(...)` | ModDevGradle，依赖用裸 `files(...)` |
-| 注册 | `DeferredRegister`（`net.minecraftforge.*`） | `DeferredRegister`（`net.neoforged.neoforge.*`） |
-| KubeJS | `kubejs-forge 2001.6.5-build.14` + rhino/architectury/fabric-loader runtime | `kubejs-neoforge 2101.7.2-build.374` + rhino 2101.2.7-build.85 |
+| 标识符 | `ResourceLocation` | `Identifier`（`Identifier.fromNamespaceAndPath`） |
+| 渲染类 | `GuiGraphics` | `GuiGraphicsExtractor` |
+| 屏幕钩子 | `render` / `renderBg` / `renderLabels` / `renderTooltip` | `extractRenderState` / `extractBackground` / `extractLabels` / `extractTooltip` |
+| 贴图 | `blit(tex, x, y, u, v, w, h, tw, th)` | `blit(RenderPipelines.GUI_TEXTURED, tex, ...)`（参数顺序不变，仅前置 pipeline） |
+| 文字 | `drawString` / `drawCenteredString` | `text` / `centeredText`（**必须完整 ARGB**，六位色值 alpha=0 会不可见） |
+| 物品 | `renderItem` / `renderItemDecorations` | `item` / `itemDecorations` |
+| tooltip | `renderTooltip` | `setTooltipForNextFrame` |
+| 分层 | `pose().pushPose()` + `translate(0,0,Z)` + `flush()` | `graphics.nextStratum()`（`pose()` 是 2D 的 `Matrix3x2fStack`：`pushMatrix`/`popMatrix`） |
+| 输入 | `mouseClicked(double,double,int)` / `keyPressed(int,int,int)` / `charTyped(char,int)` | `mouseClicked(MouseButtonEvent, boolean)` / `keyPressed(KeyEvent)` / `charTyped(CharacterEvent)` |
+| 持久化 | `saveAdditional(CompoundTag, Provider)` / `getTag()` 系 | `saveAdditional(ValueOutput)` / `loadAdditional(ValueInput)`；`ValueOutput.store(key, Codec, v)`、`ValueInput.read(key, Codec)` |
+| NBT | `getAllKeys()` / `putUUID` / `getString`(String) | `keySet()` / `UUIDUtil.CODEC` / getter 返回 `Optional`（或用 `getStringOr`） |
+| 其它 | `TagParser.parseTag`、`Level.isClientSide`(字段)、`FMLEnvironment.dist`(字段)、`displayClientMessage`、`GameProfile.getName()`、`ServerPlayer.serverLevel()`、`SavedData.Factory` | `parseCompoundFully`、`isClientSide()`(方法)、`getDist()`(方法)、`sendSystemMessage`、`name()`（record）、`level()`、`SavedDataType` + `Codec` |
+| 方块交互 | `ItemInteractionResult` | `InteractionResult` |
+| 屏幕尺寸 | `imageWidth = N` 赋值 | `super(menu, inv, title, w, h)`（字段是 final） |
+| 控件 | `renderWidget` | `extractWidgetRenderState`（public） |
 
 **物品数据这条是不对称的，最容易照抄出错**：`ItemStackData` 是 QShop 提供的 shim，但**只有 QShop 的 NeoForge 侧有**（`qshop-neoforge-1.21.1-1.7.0.jar` 内含 `com/qshop/util/ItemStackData.class`，`qshop-forge-1.20.1-1.7.0.jar` 内**没有**）。所以 NeoForge 分支写 `ItemStackData.getCustomTag(stack)`，Forge 分支只能写 `stack.getTag()`。搬运这段代码时不要直接复制，也不要为了对称去改 QShop——那属于另一个仓库的改动。
 
@@ -70,8 +92,9 @@ git -C D:\projects\q_shop_sellbox\<目标worktree> cherry-pick -x <源分支SHA>
 - 本地默认值指向用户级项目文件夹里的 QShop 工作树：
 
   ```
-  forge-1.20.1    : ../../q_shop/forge-1.20.1/build/libs/qshop-forge-1.20.1-1.7.0.jar
-  neoforge-1.21.1 : ../../q_shop/neoforge-1.21.1/build/libs/qshop-neoforge-1.21.1-1.7.0.jar
+  forge-1.20.1     : ../../q_shop/forge-1.20.1/build/libs/qshop-forge-1.20.1-1.7.0.jar
+  neoforge-1.21.1  : ../../q_shop/neoforge-1.21.1/build/libs/qshop-neoforge-1.21.1-1.7.0.jar
+  neoforge-1.26.1.2: ../../q_shop/neoforge-1.26.1.2/build/libs/qshop-neoforge-26.1.2-1.7.1.jar
   ```
 
 - **升级 QShop 只改 `qshop_jar` 这一行**，不要在 `build.gradle` 里重新硬编码文件名（历史上正是硬编码 `...-1.4.0.jar` 导致本地路径失效、CI 与 QShop 实际版本漂移）。
@@ -85,6 +108,7 @@ git -C D:\projects\q_shop_sellbox\<目标worktree> cherry-pick -x <源分支SHA>
 ```
 v1.5.1-forge-1.20.1
 v1.5.1-neoforge-1.21.1
+v1.5.1-neoforge-26.1.2
 ```
 
 git tag 是仓库级唯一的，而本仓库是锁步发布 —— 只打一个 `v1.5.1` 无法指认是哪个加载器/版本。
@@ -93,12 +117,13 @@ git tag 是仓库级唯一的，而本仓库是锁步发布 —— 只打一个 
 
 ## 构建
 
-- **JDK 必须对上目标版本**（17 / 21），否则出现 `Unsupported class file major version`。本机路径：`C:\Program Files\Java\jdk-17`、`C:\Program Files\Java\jdk-21`。两条分支的 `gradle.properties` 都已 pin `org.gradle.java.home`，本地直接用各自 wrapper 即可。
-- 两棵树**串行**构建，不要并行 —— 会争用 Gradle 缓存与内存。
-- 使用各自的 Gradle wrapper（`.\gradlew.bat`），不要用系统 gradle，也不要用 `java -version` 默认的那个 JDK。
-- 发布产物名：`qshop-sellbox-forge-1.20.1-<ver>.jar` / `qshop_sellbox-neoforge-1.21.1-<ver>.jar`。
+- **JDK 必须对上目标版本**（17 / 21 / 25），否则出现 `Unsupported class file major version`。本机路径：`C:\Program Files\Java\jdk-17`、`jdk-21`、`jdk-25.0.4.1`。三条分支的 `gradle.properties` 都已 pin `org.gradle.java.home`，本地直接用各自 wrapper 即可。
+- 三棵树**串行**构建，不要并行 —— 会争用 Gradle 缓存与内存。
+- 使用各自的 Gradle wrapper（`.\gradlew.bat`），不要用系统 gradle，也不要用 `java -version` 默认的那个 JDK（本机默认是 JDK 25）。
+- 发布产物名：`qshop-sellbox-forge-1.20.1-<ver>.jar` / `qshop_sellbox-neoforge-1.21.1-<ver>.jar` / `qshop_sellbox-neoforge-26.1.2-<ver>.jar`。
 - 构建前确认被引用的 QShop jar 已存在（缺失会 fail-fast 报错，不是静默跳过）。
-- `pack.mcmeta` 的 `pack_format` 必须对目标 MC 的**资源包**格式：1.20.1 = **15**，1.21.1 = **34**。不要写成数据包格式（1.21.1 的数据包格式是 48 —— 声明过高会让包被判为 incompatible；本仓库 1.21.1 分支曾误用 48，已在 `1561c92` 修正）。`tools\verify-release-jars.ps1` 会核验这一项。
+- `pack.mcmeta` 的 `pack_format` 必须对目标 MC 的**资源包**格式：1.20.1 = **15**，1.21.1 = **34**，26.1.2 = **84**。不要写成数据包格式（1.21.1 的数据包格式是 48 —— 声明过高会让包被判为 incompatible；本仓库 1.21.1 分支曾误用 48，已在 `1561c92` 修正）。`tools\verify-release-jars.ps1` 会核验这一项。
+- **26.1.2 用 Gradle 9**：`test` 任务默认会因"有测试源但发现不了 JUnit 用例"而失败，本项目的 test 源集是 `smokeTest` 用的 main() 程序，已在 `build.gradle` 里设 `failOnNoDiscoveredTests = false`。
 - **本机 `piston-meta.mojang.com` / `libraries.minecraft.net` 不可达**：Gradle 依赖解析可用 `--offline` 走缓存，但 ForgeGradle 的 `downloadMCMeta` / `downloadAssets` 不走 Gradle 离线开关，会直接连超时。见「已知遗留问题」第 5 条。
 
 ## 冒烟测试
@@ -110,13 +135,14 @@ git tag 是仓库级唯一的，而本仓库是锁步发布 —— 只打一个 
 
 ## CI
 
-`.github/workflows/curseforge-publish.yml` **在两条分支上内容不同**，因此**不是 cherry-pick 的对象**，各自维护：
+`.github/workflows/curseforge-publish.yml` **在三条分支上内容不同**，因此**不是 cherry-pick 的对象**，各自维护：
 
-- `forge-1.20.1` 分支：双 job（`publish-forge` + `publish-neoforge`），默认 ref 分别是 `forge-1.20.1` 与 `neoforge-1.21.1`。
-- `neoforge-1.21.1` 分支：单 job（仅 NeoForge），构建当前 ref。
-- 两条分支的 QShop 依赖 checkout 分别是 `QLNPLUS/Q-shop@master`（Forge 侧 Q-shop 的默认分支仍叫 `master`）与 `QLNPLUS/Q-shop@neoforge-1.21.1`。
+- `forge-1.20.1` 分支：三个 job（`publish-forge` + `publish-neoforge` + `publish-neoforge-126`），默认 ref 分别是 `forge-1.20.1`、`neoforge-1.21.1`、`neoforge-1.26.1.2`。
+- `neoforge-1.21.1` 分支：单 job（仅 NeoForge 1.21.1），构建当前 ref。
+- `neoforge-1.26.1.2` 分支：单 job（仅 NeoForge 26.1.2，JDK 25），构建当前 ref。
+- QShop 依赖 checkout 分别是 `QLNPLUS/Q-shop@master`（Forge 侧 Q-shop 的默认分支仍叫 `master`）、`@neoforge-1.21.1`、`@neoforge-1.26.1.2`。
 
-**因此分支名是 CI 的契约**：再次改名分支（`forge-1.20.1` / `neoforge-1.21.1`）必须同步更新 workflow 里的默认 ref 与 checkout 目录名，否则发布任务会去 checkout 一个不存在的 ref。workflow 里的构建/发布路径用的是 CI 内部 checkout 目录名（`sellbox-forge-1.20.1` / `sellbox-neoforge-1.21.1`），与本地 worktree 名一致只是便于对照，不影响本地构建。
+**因此分支名是 CI 的契约**：再次改名分支（`forge-1.20.1` / `neoforge-1.21.1` / `neoforge-1.26.1.2`）必须同步更新 workflow 里的默认 ref 与 checkout 目录名，否则发布任务会去 checkout 一个不存在的 ref。workflow 里的构建/发布路径用的是 CI 内部 checkout 目录名（`sellbox-forge-1.20.1` / `sellbox-neoforge-1.21.1` / `sellbox-neoforge-1.26.1.2`），与本地 worktree 名一致只是便于对照，不影响本地构建。
 
 ## 推送
 
@@ -124,7 +150,7 @@ git tag 是仓库级唯一的，而本仓库是锁步发布 —— 只打一个 
 
 ## 沙箱注意
 
-在 linked worktree（`neoforge-1.21.1`）里工作时，项目根的判定是**该 worktree 自身** —— 不会上溯到父目录 `D:\projects\q_shop_sellbox\`。因此 `AGENTS.md` 必须**每条分支各提交一份**，放在项目文件夹根（那里没有 `.git` 标记）是读不到的。
+在 linked worktree（`neoforge-1.21.1`、`neoforge-1.26.1.2`）里工作时，项目根的判定是**该 worktree 自身** —— 不会上溯到父目录 `D:\projects\q_shop_sellbox\`。因此 `AGENTS.md` 必须**每条分支各提交一份**，放在项目文件夹根（那里没有 `.git` 标记）是读不到的。
 
 ## 已知遗留问题（不要当成已完成）
 
@@ -133,3 +159,5 @@ git tag 是仓库级唯一的，而本仓库是锁步发布 —— 只打一个 
 3. **共享率已超抽 `common/` 的阈值**：同名 Java 文件 27/27，其中字节相同 8、差异 ≤3 行 4、4–15 行 4 → `(8+4+4)/27 = 59% > 50%`。按 skill 的量化判据，本项目**应当**抽 `common/` 共享模块（模型 B：聚合 `main` 分支）。这是一次结构性重构（需先把平台调用点收敛到 shim 文件，物品数据这条已经被 QShop 的 `ItemStackData` 部分解决了），属于独立任务，未在本轮整理中执行。
 4. **Forge 的 `runServer` 加载不了 QShop 的 Forge 生产 jar（既有问题，与 QShop 版本无关）**：`run\mods\` 里放 QShop 的 forge 产物（1.4.0、1.7.0 均实测）会在 `common_setup` 抛 `NoSuchMethodError`，一次一个方法（1.7.0 是 `SoundEvent.m_262824_`，1.4.0 是 `Commands.m_82127_`）。原因是 Forge 生产 jar 用 SRG 名、dev 运行时按官方名解析，而这些方法的 SRG id 随 Forge 版本重新分配。**NeoForge 侧不受影响**（其生产 jar 不做 SRG 重映射），所以 `neoforge-1.21.1` 的服务端冒烟能通过。要让 Forge 冒烟也通过，需要 QShop 提供未 reobf 的 dev 产物，或把 QShop 的 classes 直接放进 run classpath。
 5. **本机 Mojang 主机不可达**：`piston-meta.mojang.com` / `libraries.minecraft.net` 连不通 → ForgeGradle 的 `downloadMCMeta`、`downloadAssets`、`extractNatives` 会失败或挂起，且 `--offline` 对它们无效（它们不走 Gradle 的离线开关）。绕过方式：`-x downloadMCMeta -x downloadAssets`，并先把 `%USERPROFILE%\.gradle\caches\forge_gradle\minecraft_repo\versions\1.20.1\version.json` 复制到 `build\downloadMCMeta\version.json` 满足 `extractNatives` 的输入校验。NeoForge 侧用 neoformruntime 缓存，`--offline` 即可跑通。
+6. **`neoforge-1.26.1.2` 只验证到"服务端能起来"**：构建、静态核验、`runServer` 到 `Done` 全部通过（QShop 1.7.1 + Sell Box 1.5.0，0 缺失依赖），但 **GUI 尚未在真实客户端里跑过**。26.x 的渲染模型改成了 render-state 抽取（`extractRenderState` + `nextStratum`），`forge-gui-layering` skill 明确要求：迁移后的 GUI 至少在一次真实客户端运行中核验九宫格面板、文字较多的对话框、物品/tooltip、顶角按钮 —— **编译通过不能作为绘制正确的证据**。首次在客户端测试时重点看：面板边框是否碎裂、文字是否可见（ARGB）、tooltip 位置、设置页与物品页切换时的遮挡关系。
+7. **`neoforge-1.26.1.2` 仅存在于本地**：远端尚无该分支，需要时 `git push -u origin neoforge-1.26.1.2`。在推送之前 `origin` 上的三分支 CI 契约只覆盖前两条。
