@@ -18,17 +18,20 @@ import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+import net.neoforged.neoforge.transfer.item.VanillaContainerWrapper;
 import net.neoforged.neoforge.network.IContainerFactory;
 import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.registries.DeferredItem;
 
 @Mod(SellBoxMod.MODID)
 public final class SellBoxMod {
     public static final String MODID = "qshop_sellbox";
 
-    public static final DeferredRegister<Block> BLOCKS =
+    public static final DeferredRegister.Blocks BLOCKS =
             DeferredRegister.createBlocks(MODID);
-    public static final DeferredRegister<Item> ITEMS =
+    public static final DeferredRegister.Items ITEMS =
             DeferredRegister.createItems(MODID);
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
             DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, MODID);
@@ -37,18 +40,18 @@ public final class SellBoxMod {
     public static final DeferredRegister<CreativeModeTab> TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
 
-    public static final DeferredHolder<Block, Block> SELL_BOX = BLOCKS.register("sell_box",
-            () -> new SellBoxBlock(Block.Properties.of()
+    public static final DeferredBlock<SellBoxBlock> SELL_BOX = BLOCKS.registerBlock("sell_box",
+            SellBoxBlock::new,
+            properties -> properties
                     .mapColor(MapColor.WOOD)
                     .instrument(NoteBlockInstrument.BASS)
                     .strength(2.5F)
                     .sound(SoundType.WOOD)
-                    .ignitedByLava()));
-    public static final DeferredHolder<Item, Item> SELL_BOX_ITEM = ITEMS.register("sell_box",
-            () -> new BlockItem(SELL_BOX.get(), new Item.Properties()));
+                    .ignitedByLava());
+    public static final DeferredItem<BlockItem> SELL_BOX_ITEM = ITEMS.registerSimpleBlockItem("sell_box", SELL_BOX);
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SellBoxBlockEntity>> SELL_BOX_ENTITY =
-            BLOCK_ENTITIES.register("sell_box", () -> BlockEntityType.Builder.of(
-                    SellBoxBlockEntity::new, SELL_BOX.get()).build(null));
+            BLOCK_ENTITIES.register("sell_box", () ->
+                    new BlockEntityType<>(SellBoxBlockEntity::new, SELL_BOX.get()));
     public static final DeferredHolder<MenuType<?>, MenuType<SellBoxMenu>> SELL_BOX_MENU = MENUS.register(
             "sell_box", () -> {
                 IContainerFactory<SellBoxMenu> factory = SellBoxMenu::new;
@@ -71,13 +74,16 @@ public final class SellBoxMod {
                 "qshop_sellbox-common.toml");
         SellBoxNetwork.init(bus);
         bus.addListener(SellBoxMod::registerCapabilities);
-        if (FMLEnvironment.dist == Dist.CLIENT) {
+        if (FMLEnvironment.getDist() == Dist.CLIENT) {
             bus.addListener(com.qshop.sellbox.client.SellBoxClient::registerMenuScreens);
         }
     }
 
     private static void registerCapabilities(RegisterCapabilitiesEvent event) {
-        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, SELL_BOX_ENTITY.get(),
-                (box, side) -> box.items());
+        // 26.x 移除了旧的 IItemHandler 能力：物品能力现在是 Capabilities.Item.BLOCK，
+        // 承载类型为 ResourceHandler<ItemResource>。方块实体实现原版 Container（内部仍用 ItemStackHandler），
+        // 这里用 NeoForge 提供的 Container -> ResourceHandler 桥接，保持漏斗/管道自动化行为不变。
+        event.registerBlockEntity(Capabilities.Item.BLOCK, SELL_BOX_ENTITY.get(),
+                (box, side) -> VanillaContainerWrapper.of(box));
     }
 }

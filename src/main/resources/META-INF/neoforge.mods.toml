@@ -1,5 +1,5 @@
 modLoader="javafml"
-loaderVersion="[1,)"
+loaderVersion="${loader_version_range}"
 license="${mod_license}"
 showAsResourcePack=false
 
@@ -13,14 +13,14 @@ description='''A QShop addon that automatically sells items stored in a containe
 [[dependencies.${mod_id}]]
 modId="neoforge"
 type="required"
-versionRange="[21.1.248,)"
+versionRange="${neo_version_range}"
 ordering="NONE"
 side="BOTH"
 
 [[dependencies.${mod_id}]]
 modId="minecraft"
 type="required"
-versionRange="[1.21.1]"
+versionRange="${minecraft_version_range}"
 ordering="NONE"
 side="BOTH"
 

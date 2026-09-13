@@ -1,11 +1,14 @@
 package com.qshop.sellbox;
 
-import net.minecraft.core.HolderLookup;
+import com.mojang.serialization.Codec;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.saveddata.SavedDataType;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -18,35 +21,39 @@ public final class SellBoxSavedData extends SavedData {
     private final Map<UUID, PlayerRecord> players = new LinkedHashMap<>();
     private final Map<UUID, Map<String, Double>> pending = new LinkedHashMap<>();
     private final Map<UUID, NotificationFlags> pendingNotifications = new LinkedHashMap<>();
-    private static final Factory<SellBoxSavedData> FACTORY = new Factory<>(
-            SellBoxSavedData::new, SellBoxSavedData::load);
+    private static final Codec<SellBoxSavedData> CODEC = CompoundTag.CODEC.xmap(
+            SellBoxSavedData::load, SellBoxSavedData::saveTag);
+    private static final SavedDataType<SellBoxSavedData> TYPE = new SavedDataType<>(
+            Identifier.fromNamespaceAndPath(SellBoxMod.MODID, DATA_ID),
+            SellBoxSavedData::new, CODEC);
 
     public static SellBoxSavedData get(MinecraftServer server) {
-        return server.overworld().getDataStorage().computeIfAbsent(
-                FACTORY, DATA_ID);
+        return server.overworld().getDataStorage().computeIfAbsent(TYPE);
     }
 
-    public static SellBoxSavedData load(CompoundTag tag, HolderLookup.Provider registries) {
+    public static SellBoxSavedData load(CompoundTag tag) {
         SellBoxSavedData data = new SellBoxSavedData();
-        ListTag playerList = tag.getList("players", Tag.TAG_COMPOUND);
+        ListTag playerList = tag.getListOrEmpty("players");
         for (Tag raw : playerList) {
             CompoundTag entry = (CompoundTag) raw;
-            if (!entry.hasUUID("uuid")) continue;
-            data.players.put(entry.getUUID("uuid"), new PlayerRecord(
-                    entry.getUUID("uuid"), entry.getString("name")));
+            UUID uuid = entry.read("uuid", UUIDUtil.CODEC).orElse(null);
+            if (uuid == null) continue;
+            data.players.put(uuid, new PlayerRecord(
+                    uuid, entry.getStringOr("name", "")));
         }
-        ListTag pendingList = tag.getList("pending", Tag.TAG_COMPOUND);
+        ListTag pendingList = tag.getListOrEmpty("pending");
         for (Tag raw : pendingList) {
             CompoundTag entry = (CompoundTag) raw;
-            if (!entry.hasUUID("uuid")) continue;
-            CompoundTag currencies = entry.getCompound("currencies");
+            UUID uuid = entry.read("uuid", UUIDUtil.CODEC).orElse(null);
+            if (uuid == null) continue;
+            CompoundTag currencies = entry.getCompoundOrEmpty("currencies");
             Map<String, Double> values = new LinkedHashMap<>();
-            for (String key : currencies.getAllKeys()) values.put(key, currencies.getDouble(key));
-            data.pending.put(entry.getUUID("uuid"), values);
+            for (String key : currencies.keySet()) values.put(key, currencies.getDoubleOr(key, 0D));
+            data.pending.put(uuid, values);
             // Old data only had a chat sync message. Preserve that behavior for migration.
-            data.pendingNotifications.put(entry.getUUID("uuid"), new NotificationFlags(
-                    entry.getBoolean("showActionBarNotification"),
-                    !entry.contains("showChatNotification") || entry.getBoolean("showChatNotification")));
+            data.pendingNotifications.put(uuid, new NotificationFlags(
+                    entry.getBooleanOr("showActionBarNotification", false),
+                    !entry.contains("showChatNotification") || entry.getBooleanOr("showChatNotification", false)));
         }
         return data;
     }
@@ -85,21 +92,21 @@ public final class SellBoxSavedData extends SavedData {
         return pending.containsKey(uuid) && !pending.get(uuid).isEmpty();
     }
 
-    @Override
-    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
+    private CompoundTag saveTag() {
         ListTag playerList = new ListTag();
         for (PlayerRecord player : players.values()) {
             CompoundTag entry = new CompoundTag();
-            entry.putUUID("uuid", player.uuid());
+            entry.store("uuid", UUIDUtil.CODEC, player.uuid());
             entry.putString("name", player.name());
             playerList.add(entry);
         }
+        CompoundTag tag = new CompoundTag();
         tag.put("players", playerList);
 
         ListTag pendingList = new ListTag();
         for (var player : pending.entrySet()) {
             CompoundTag entry = new CompoundTag();
-            entry.putUUID("uuid", player.getKey());
+            entry.store("uuid", UUIDUtil.CODEC, player.getKey());
             CompoundTag currencies = new CompoundTag();
             player.getValue().forEach(currencies::putDouble);
             entry.put("currencies", currencies);

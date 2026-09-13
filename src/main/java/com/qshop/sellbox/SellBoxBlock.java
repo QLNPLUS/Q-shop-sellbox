@@ -45,9 +45,9 @@ public final class SellBoxBlock extends BaseEntityBlock {
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer,
                             net.minecraft.world.item.ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
-        if (!level.isClientSide && placer instanceof Player player
+        if (!level.isClientSide() && placer instanceof Player player
                 && level.getBlockEntity(pos) instanceof SellBoxBlockEntity box) {
-            box.setOwner(player.getUUID(), player.getGameProfile().getName());
+            box.setOwner(player.getUUID(), player.getGameProfile().name());
         }
     }
 
@@ -75,32 +75,17 @@ public final class SellBoxBlock extends BaseEntityBlock {
     }
 
     @Override
-    protected net.minecraft.world.ItemInteractionResult useItemOn(
+    protected InteractionResult useItemOn(
             net.minecraft.world.item.ItemStack stack, BlockState state, Level level, BlockPos pos,
             Player player, InteractionHand hand, BlockHitResult hit) {
         useWithoutItem(state, level, pos, player, hit);
-        return net.minecraft.world.ItemInteractionResult.sidedSuccess(level.isClientSide);
+        return level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
     }
 
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state,
                                                                    BlockEntityType<T> type) {
-        return level.isClientSide ? null
+        return level.isClientSide() ? null
                 : createTickerHelper(type, SellBoxMod.SELL_BOX_ENTITY.get(), SellBoxBlockEntity::serverTick);
-    }
-
-    @Override
-    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
-        if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof SellBoxBlockEntity box) {
-            for (int slot = 0; slot < box.items().getSlots(); slot++) {
-                net.minecraft.world.item.ItemStack stack = box.items().getStackInSlot(slot);
-                if (!stack.isEmpty()) {
-                    net.minecraft.world.Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(),
-                            box.items().extractItem(slot, stack.getCount(), false));
-                }
-            }
-            level.removeBlockEntity(pos);
-        }
-        super.onRemove(state, level, pos, newState, moved);
     }
 }

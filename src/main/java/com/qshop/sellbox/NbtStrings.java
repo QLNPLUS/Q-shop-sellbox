@@ -18,7 +18,7 @@ public final class NbtStrings {
         String text = value.toString().trim();
         if (text.isEmpty()) return new CompoundTag();
         try {
-            return TagParser.parseTag(text);
+            return TagParser.parseCompoundFully(text);
         } catch (Exception ignored) {
             try {
                 return parseElement(com.google.gson.JsonParser.parseString(text));
@@ -31,7 +31,7 @@ public final class NbtStrings {
     private static CompoundTag parseElement(JsonElement element) {
         String snbt = toSnbt(element);
         try {
-            return TagParser.parseTag(snbt);
+            return TagParser.parseCompoundFully(snbt);
         } catch (Exception e) {
             throw new IllegalArgumentException("Invalid NBT: " + snbt, e);
         }

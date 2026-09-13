@@ -6,9 +6,7 @@ import com.qshop.sellbox.SellBoxPrices;
 import com.qshop.sellbox.SellBoxScreen;
 import com.qshop.sellbox.PriceQuote;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.api.distmarker.Dist;
@@ -162,7 +160,7 @@ public final class SellBoxClient {
     }
 
     private static String priceKey(ItemStack stack) {
-        return stack.save(RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY)).toString();
+        return ItemStack.CODEC.encodeStart(NbtOps.INSTANCE, stack).getOrThrow().toString();
     }
 
     @SubscribeEvent

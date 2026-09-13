@@ -33,8 +33,8 @@ public final class SellBoxEvents {
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        SellBoxSavedData data = SellBoxSavedData.get(player.server);
-        data.recordPlayer(player.getUUID(), player.getGameProfile().getName());
+        SellBoxSavedData data = SellBoxSavedData.get(player.level().getServer());
+        data.recordPlayer(player.getUUID(), player.getGameProfile().name());
         SellBoxSavedData.PendingResult pending = data.takePending(player.getUUID());
         for (var entry : pending.earnings().entrySet()) {
             QShopAddonApi.currency().deposit(player, entry.getKey(), entry.getValue(),
@@ -42,7 +42,7 @@ public final class SellBoxEvents {
             net.minecraft.network.chat.Component message = net.minecraft.network.chat.Component.translatable(
                     "qshop_sellbox.message.synced", format(entry.getValue()),
                     CurrencyRegistry.displayName(entry.getKey()));
-            if (pending.showActionBarNotification()) player.displayClientMessage(message, true);
+            if (pending.showActionBarNotification()) player.sendSystemMessage(message, true);
             if (pending.showChatNotification()) player.sendSystemMessage(message);
         }
         SellBoxNetwork.sendPrices(player);

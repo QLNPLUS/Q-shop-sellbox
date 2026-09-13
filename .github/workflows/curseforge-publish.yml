@@ -1,4 +1,4 @@
-name: Publish QShop Sell Box NeoForge
+name: Publish QShop Sell Box NeoForge 26.1.2
 
 on:
   release:
@@ -14,7 +14,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: curseforge-sellbox-neoforge-${{ github.event.release.tag_name || inputs.tag || github.ref_name }}
+  group: curseforge-sellbox-neoforge-126-${{ github.event.release.tag_name || inputs.tag || github.ref_name }}
   cancel-in-progress: false
 
 env:
@@ -25,24 +25,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out Sell Box NeoForge source
+      - name: Check out Sell Box NeoForge 26.1.2 source
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.release.tag_name || inputs.tag || github.ref }}
-          path: sellbox-neoforge-1.21.1
+          path: sellbox-neoforge-1.26.1.2
 
-      - name: Check out QShop NeoForge dependency
+      - name: Check out QShop NeoForge 26.1.2 dependency
         uses: actions/checkout@v4
         with:
           repository: QLNPLUS/Q-shop
-          ref: neoforge-1.21.1
-          path: Q-shop-neoforge-1.21.1
+          ref: neoforge-1.26.1.2
+          path: Q-shop-neoforge-1.26.1.2
 
-      - name: Set up Java 21
+      - name: Set up Java 25
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -50,8 +50,8 @@ jobs:
       - name: Remove local build settings
         run: |
           sed -i -E '/^systemProp\.(http|https)\.proxy(Host|Port)=|^org\.gradle\.java\.home=/d' \
-            Q-shop-neoforge-1.21.1/gradle.properties \
-            sellbox-neoforge-1.21.1/gradle.properties
+            Q-shop-neoforge-1.26.1.2/gradle.properties \
+            sellbox-neoforge-1.26.1.2/gradle.properties
 
       - name: Prepare CurseForge version
         env:
@@ -72,20 +72,20 @@ jobs:
             exit 1
           }
 
-      - name: Build QShop NeoForge dependency
+      - name: Build QShop NeoForge 26.1.2 dependency
         run: |
-          chmod +x Q-shop-neoforge-1.21.1/gradlew
-          (cd Q-shop-neoforge-1.21.1 && ./gradlew build --no-daemon)
+          chmod +x Q-shop-neoforge-1.26.1.2/gradlew
+          (cd Q-shop-neoforge-1.26.1.2 && ./gradlew build --no-daemon)
 
-      - name: Build Sell Box NeoForge mod
+      - name: Build Sell Box NeoForge 26.1.2 mod
         run: |
-          QSHOP_JAR="$(ls Q-shop-neoforge-1.21.1/build/libs/qshop-neoforge-1.21.1-*.jar | grep -v sources | head -1)"
-          test -f "$QSHOP_JAR" || { echo "QShop NeoForge jar not found under Q-shop-neoforge-1.21.1/build/libs"; exit 1; }
-          chmod +x sellbox-neoforge-1.21.1/gradlew
-          (cd sellbox-neoforge-1.21.1 && ./gradlew build --no-daemon -Pqshop_jar="../$QSHOP_JAR")
+          QSHOP_JAR="$(ls Q-shop-neoforge-1.26.1.2/build/libs/qshop-neoforge-26.1.2-*.jar | grep -v sources | head -1)"
+          test -f "$QSHOP_JAR" || { echo "QShop NeoForge 26.1.2 jar not found under Q-shop-neoforge-1.26.1.2/build/libs"; exit 1; }
+          chmod +x sellbox-neoforge-1.26.1.2/gradlew
+          (cd sellbox-neoforge-1.26.1.2 && ./gradlew build --no-daemon -Pqshop_jar="../$QSHOP_JAR")
 
-      - name: Prepare current NeoForge changelog
-        working-directory: sellbox-neoforge-1.21.1
+      - name: Prepare current NeoForge 26.1.2 changelog
+        working-directory: sellbox-neoforge-1.26.1.2
         env:
           RELEASE_VERSION: ${{ env.RELEASE_VERSION }}
         run: |
@@ -105,18 +105,18 @@ jobs:
             exit 1
           }
 
-      - name: Publish Sell Box NeoForge mod file
+      - name: Publish Sell Box NeoForge 26.1.2 mod file
         uses: Kira-NT/mc-publish@v3
         with:
           curseforge-id: ${{ vars.CURSEFORGE_PROJECT_ID }}
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           github-tag: ${{ env.RELEASE_VERSION }}
-          files: sellbox-neoforge-1.21.1/build/libs/qshop_sellbox-neoforge-1.21.1-*.jar
+          files: sellbox-neoforge-1.26.1.2/build/libs/qshop_sellbox-neoforge-26.1.2-*.jar
           version: ${{ env.CURSEFORGE_VERSION }}
-          name: QShop Sell Box ${{ env.CURSEFORGE_VERSION }} NeoForge 1.21.1
+          name: QShop Sell Box ${{ env.CURSEFORGE_VERSION }} NeoForge 26.1.2
           version-type: release
-          changelog-file: sellbox-neoforge-1.21.1/build/curseforge-changelog.md
+          changelog-file: sellbox-neoforge-1.26.1.2/build/curseforge-changelog.md
           loaders: neoforge
-          game-versions: 1.21.1
-          java: 21
+          game-versions: 26.1.2
+          java: 25

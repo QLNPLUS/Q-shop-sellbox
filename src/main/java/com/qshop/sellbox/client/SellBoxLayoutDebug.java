@@ -8,7 +8,7 @@ import com.google.gson.JsonParser;
 import com.qshop.sellbox.SellBoxConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 import java.io.IOException;
@@ -134,7 +134,7 @@ public final class SellBoxLayoutDebug {
         save();
     }
 
-    public static void renderOverlay(GuiGraphics graphics, Font font,
+    public static void renderOverlay(GuiGraphicsExtractor graphics, Font font,
                                      int x, int y, int width, int height) {
         int right = x + Math.max(1, width);
         int bottom = y + Math.max(1, height);
@@ -151,8 +151,8 @@ public final class SellBoxLayoutDebug {
         int panelY = 4;
         graphics.fill(panelX - 2, panelY - 2, panelX + textWidth + 4,
                 panelY + font.lineHeight * 2 + 3, 0xCC111111);
-        graphics.drawString(font, Component.literal(label), panelX, panelY, 0xFFFFD54F, false);
-        graphics.drawString(font, Component.literal(position), panelX,
+        graphics.text(font, Component.literal(label), panelX, panelY, 0xFFFFD54F, false);
+        graphics.text(font, Component.literal(position), panelX,
                 panelY + font.lineHeight, 0xFFFFFFFF, false);
     }
 

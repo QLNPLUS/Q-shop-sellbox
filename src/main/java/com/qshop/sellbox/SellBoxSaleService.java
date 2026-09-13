@@ -3,7 +3,7 @@ package com.qshop.sellbox;
 import com.qshop.api.QShopAddonApi;
 import com.qshop.currency.CurrencyRegistry;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.UUID;
 
 public final class SellBoxSaleService {
-    public static final ResourceLocation SOURCE = ResourceLocation.fromNamespaceAndPath(
+    public static final Identifier SOURCE = Identifier.fromNamespaceAndPath(
             SellBoxMod.MODID, "auto_sell");
 
     private SellBoxSaleService() {}
@@ -57,7 +57,7 @@ public final class SellBoxSaleService {
             Component message = Component.translatable("qshop_sellbox.message.sold",
                     itemCount, format(first.getValue()),
                     CurrencyRegistry.displayName(first.getKey()));
-            if (online != null && box.showActionBarNotification()) online.displayClientMessage(message, true);
+            if (online != null && box.showActionBarNotification()) online.sendSystemMessage(message, true);
             if (online != null && box.showChatNotification()) online.sendSystemMessage(message);
         }
     }

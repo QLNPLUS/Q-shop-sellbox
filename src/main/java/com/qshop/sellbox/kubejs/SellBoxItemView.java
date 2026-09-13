@@ -17,7 +17,7 @@ import net.minecraft.nbt.NumericTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.tags.TagKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 
 /** Script-friendly view of an item stack used by the dynamic price callback. */
@@ -91,7 +91,7 @@ public final class SellBoxItemView extends NativeObject {
     public boolean hasTag(String tagId) {
         if (tagId == null || tagId.isBlank()) return false;
         String normalized = tagId.charAt(0) == '#' ? tagId.substring(1) : tagId;
-        ResourceLocation location = ResourceLocation.tryParse(normalized);
+        Identifier location = Identifier.tryParse(normalized);
         if (location == null) return false;
         return stack.is(TagKey.create(Registries.ITEM, location));
     }
@@ -111,7 +111,7 @@ public final class SellBoxItemView extends NativeObject {
         if (tag == null) return null;
         if (tag instanceof CompoundTag compound) {
             NativeObject object = new NativeObject(context.factory);
-            for (String key : compound.getAllKeys()) {
+            for (String key : compound.keySet()) {
                 object.put(context, key, object, toJsValue(context, compound.get(key)));
             }
             return object;
@@ -141,8 +141,8 @@ public final class SellBoxItemView extends NativeObject {
             for (int index = 0; index < values.length; index++) result[index] = values[index];
             return new NativeArray(context, result);
         }
-        if (tag instanceof NumericTag numeric) return numeric.getAsNumber();
-        if (tag instanceof StringTag string) return string.getAsString();
-        return tag.getAsString();
+        if (tag instanceof NumericTag numeric) return numeric.box();
+        if (tag instanceof StringTag string) return string.value();
+        return tag.toString();
     }
 }

@@ -81,7 +81,7 @@ public final class SellBoxApi {
         if (stack == null || stack.isEmpty()) {
             throw new IllegalArgumentException("SellBox.queryPrice expects an ItemStack-compatible item");
         }
-        if (FMLEnvironment.dist == Dist.CLIENT) {
+        if (FMLEnvironment.getDist() == Dist.CLIENT) {
             com.qshop.sellbox.client.SellBoxClient.queryPrice(stack,
                     quote -> invokeClientPriceCallback(function, quote));
         }

@@ -1,25 +1,26 @@
 package com.qshop.sellbox;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.qshop.sellbox.client.SellBoxEmiCompat;
 import com.qshop.sellbox.client.SellBoxLayoutDebug;
 import com.qshop.sellbox.client.SellBoxTextures;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.multiplayer.PlayerInfo;
-import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.lwjgl.glfw.GLFW;
 
-import java.util.List;
 import java.util.UUID;
 
 public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
@@ -70,24 +71,22 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
             super(font, x, y, width, height, message);
         }
 
-        private void renderManually(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        private void renderManually(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
             manualRender = true;
-            render(graphics, mouseX, mouseY, partialTick);
+            extractWidgetRenderState(graphics, mouseX, mouseY, partialTick);
             manualRender = false;
         }
 
         @Override
-        public void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        public void extractWidgetRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
             if (manualRender) {
-                super.renderWidget(graphics, mouseX, mouseY, partialTick);
+                super.extractWidgetRenderState(graphics, mouseX, mouseY, partialTick);
             }
         }
     }
 
     public SellBoxScreen(SellBoxMenu menu, Inventory inventory, Component title) {
-        super(menu, inventory, title);
-        imageWidth = 176;
-        imageHeight = 166;
+        super(menu, inventory, title, 176, 166);
         inventoryLabelY = 74;
     }
 
@@ -115,31 +114,30 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
     }
 
     @Override
-    protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+    public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        graphics.fill(0, 0, this.width, this.height, 0x66000000);
         // Match CreativeModeInventoryScreen: unselected top tabs are behind the panel.
         for (int page = 0; page < 2; page++) {
             if (page != tab) {
                 SellBoxTextures.tab(graphics, tabX(page), tabY(page), page, false);
             }
         }
-        SellBoxTextures.background(graphics, leftPos, topPos);
+        if (tab == 0) {
+            SellBoxTextures.background(graphics, leftPos, topPos);
+        } else {
+            SellBoxTextures.ownerBackground(graphics, leftPos, topPos);
+        }
     }
 
     @Override
-    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        graphics.fill(0, 0, this.width, this.height, 0x66000000);
-        renderBg(graphics, partialTick, mouseX, mouseY);
-    }
-
-    @Override
-    protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+    protected void extractLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         if (tab == 0) {
             // Match the vanilla container labels: dark text without a drop shadow.
-            graphics.drawString(font, title,
+            graphics.text(font, title,
                     layoutX(SellBoxLayoutDebug.Widget.ITEM_TITLE, 8),
                     layoutY(SellBoxLayoutDebug.Widget.ITEM_TITLE, 6),
                     DARK_TEXT_COLOR, false);
-            graphics.drawString(font, Component.translatable("container.inventory"),
+            graphics.text(font, Component.translatable("container.inventory"),
                     layoutX(SellBoxLayoutDebug.Widget.ITEM_INVENTORY, 8),
                     layoutY(SellBoxLayoutDebug.Widget.ITEM_INVENTORY, inventoryLabelY - 1),
                     DARK_TEXT_COLOR, false);
@@ -149,75 +147,54 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         SellBoxEmiCompat.setSettingsSuppressed(tab == 1);
         syncIntervalInputPosition();
         if (tab == 0) {
             // Keep the vanilla container path on the item page, including item tooltips.
-            super.render(graphics, mouseX, mouseY, partialTick);
-            flushAll(graphics);
-        } else {
-            // The settings page has no visible slots; avoid rendering their item decorations
-            // in the first place instead of trying to cover them afterward.
-            renderBg(graphics, partialTick, mouseX, mouseY);
-            graphics.flush();
+            super.extractRenderState(graphics, mouseX, mouseY, partialTick);
         }
 
-        graphics.pose().pushPose();
-        graphics.pose().translate(0, 0, 300);
+        // The settings page draws its own opaque page on a later stratum.
+        graphics.nextStratum();
         if (tab == 1) {
-            // Submit the opaque page background after the slot item buffer, then render content.
-            SellBoxTextures.ownerBackground(graphics, leftPos, topPos);
-            flushAll(graphics);
             renderOwnerPage(graphics, mouseX, mouseY);
         }
         renderSelectedTab(graphics);
-        graphics.flush();
-        graphics.pose().popPose();
 
         if (tab == 1 && intervalInput != null) {
-            graphics.pose().pushPose();
-            graphics.pose().translate(0, 0, 400);
+            graphics.nextStratum();
             intervalInput.renderManually(graphics, mouseX, mouseY, partialTick);
-            graphics.flush();
-            graphics.pose().popPose();
         }
 
         if (tab == 1 && menu.owner() != null
                 && inside(mouseX, mouseY,
                 screenX(SellBoxLayoutDebug.Widget.OWNER_AVATAR, 8),
                 screenY(SellBoxLayoutDebug.Widget.OWNER_AVATAR, 20), 160, 20)) {
-            graphics.renderTooltip(font,
+            graphics.setTooltipForNextFrame(
                     Component.literal("UUID: " + menu.owner()), mouseX, mouseY);
-            graphics.flush();
         }
 
         if (tab == 0) {
-            graphics.pose().pushPose();
-            graphics.pose().translate(0, 0, 700);
-            super.renderTooltip(graphics, mouseX, mouseY);
-            graphics.flush();
-            graphics.pose().popPose();
+            // Render after the custom tab layer so item tooltips cannot be covered by it.
+            graphics.nextStratum();
+            super.extractTooltip(graphics, mouseX, mouseY);
         }
 
         renderDebugOverlay(graphics, mouseX, mouseY);
     }
 
     @Override
-    protected void renderTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
-        // Render after the custom tab layer so item tooltips cannot be covered by it.
+    protected void extractTooltip(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+        // Rendered from extractRenderState after the custom tab layer instead.
     }
 
-    private void renderSelectedTab(GuiGraphics graphics) {
+    private void renderSelectedTab(GuiGraphicsExtractor graphics) {
         int x = tabX(tab);
         SellBoxTextures.tab(graphics, x, tabY(tab), tab, true);
-        graphics.pose().pushPose();
-        graphics.pose().translate(0, 0, 100);
         for (int page = 0; page < 2; page++) {
-            graphics.renderItem(tabIcon(page), tabX(page) + 5, tabY(page) + 8);
+            graphics.item(tabIcon(page), tabX(page) + 5, tabY(page) + 8);
         }
-        graphics.pose().popPose();
-        flushAll(graphics);
     }
 
     private ItemStack tabIcon(int page) {
@@ -225,7 +202,7 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
                 : new ItemStack(Items.PLAYER_HEAD);
     }
 
-    private void renderOwnerPage(GuiGraphics graphics, int mouseX, int mouseY) {
+    private void renderOwnerPage(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         drawText(graphics, Component.translatable("qshop_sellbox.tab.owner"),
                 screenX(SellBoxLayoutDebug.Widget.OWNER_TITLE, 8),
                 screenY(SellBoxLayoutDebug.Widget.OWNER_TITLE, 6), TEXT_COLOR);
@@ -301,7 +278,7 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
                 menu.showChatNotification());
     }
 
-    private void drawNotificationRow(GuiGraphics graphics, int mouseX, int mouseY,
+    private void drawNotificationRow(GuiGraphicsExtractor graphics, int mouseX, int mouseY,
                                      SellBoxLayoutDebug.Widget widget, Component label, boolean checked) {
         int x = screenX(widget, 8);
         int y = screenY(widget, widget == SellBoxLayoutDebug.Widget.ACTION_BAR_NOTIFICATION ? 141 : 153);
@@ -310,19 +287,19 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
         drawText(graphics, label, x + 16, y + 2, TEXT_COLOR);
     }
 
-    private void drawButton(GuiGraphics graphics, int x, int y, Component label,
+    private void drawButton(GuiGraphicsExtractor graphics, int x, int y, Component label,
                             int width, boolean hovered) {
         SellBoxTextures.button(graphics, x, y, width, BUTTON_HEIGHT, hovered, true);
         drawButtonLabel(graphics, label, x, y, width, BUTTON_HEIGHT);
     }
 
-    private void drawSegment(GuiGraphics graphics, int x, int y, Component label,
+    private void drawSegment(GuiGraphicsExtractor graphics, int x, int y, Component label,
                              int width, boolean selected, boolean hovered) {
         SellBoxTextures.button(graphics, x, y, width, BUTTON_HEIGHT, hovered, selected);
         drawButtonLabel(graphics, label, x, y, width, BUTTON_HEIGHT);
     }
 
-    private void drawButtonLabel(GuiGraphics graphics, Component label,
+    private void drawButtonLabel(GuiGraphicsExtractor graphics, Component label,
                                  int x, int y, int width, int height) {
         int maxTextWidth = Math.max(1, width - 8);
         String text = font.plainSubstrByWidth(label.getString(), maxTextWidth);
@@ -348,22 +325,21 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
         return new int[]{firstWidth, Math.max(BUTTON_MIN_WIDTH, secondWidth)};
     }
 
-    private void drawSmallButton(GuiGraphics graphics, int x, int y, String label, boolean hovered) {
+    private void drawSmallButton(GuiGraphicsExtractor graphics, int x, int y, String label, boolean hovered) {
         SellBoxTextures.smallButton(graphics, x, y, hovered);
         drawCenteredText(graphics, label, x + 10, y + 5, TEXT_COLOR);
     }
 
-    private void drawAvatar(GuiGraphics graphics, int x, int y, UUID owner) {
-        ResourceLocation skin = ResourceLocation.fromNamespaceAndPath(
+    private void drawAvatar(GuiGraphicsExtractor graphics, int x, int y, UUID owner) {
+        Identifier skin = Identifier.fromNamespaceAndPath(
                 "minecraft", "textures/entity/steve.png");
         if (owner != null && Minecraft.getInstance().getConnection() != null) {
             PlayerInfo info = Minecraft.getInstance().getConnection().getPlayerInfo(owner);
-            if (info != null) skin = info.getSkin().texture();
+            if (info != null) skin = info.getSkin().body().texturePath();
         }
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderTexture(0, skin);
-        graphics.blit(skin, x, y, 20, 20, 8, 8, 8, 8, 64, 64);
-        graphics.blit(skin, x, y, 20, 20, 40, 8, 8, 8, 64, 64);
+        // Face, then the hat layer on top.
+        graphics.blit(RenderPipelines.GUI_TEXTURED, skin, x, y, 20, 20, 8, 8, 8, 8, 64, 64);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, skin, x, y, 20, 20, 40, 8, 8, 8, 64, 64);
     }
 
     private void sendSettings(SellMode mode, int intervalTicks) {
@@ -451,15 +427,12 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
         intervalInput.setY(screenY(SellBoxLayoutDebug.Widget.INTERVAL_INPUT, 123));
     }
 
-    private void renderDebugOverlay(GuiGraphics graphics, int mouseX, int mouseY) {
+    private void renderDebugOverlay(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         if (!SellBoxLayoutDebug.isEnabled()) return;
         DebugBounds bounds = debugBounds(SellBoxLayoutDebug.selected());
-        graphics.pose().pushPose();
-        graphics.pose().translate(0, 0, 900);
+        graphics.nextStratum();
         SellBoxLayoutDebug.renderOverlay(graphics, font, bounds.x(), bounds.y(),
                 bounds.width(), bounds.height());
-        graphics.flush();
-        graphics.pose().popPose();
     }
 
     private DebugBounds debugBounds(SellBoxLayoutDebug.Widget widget) {
@@ -509,29 +482,31 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
 
     private record DebugBounds(int x, int y, int width, int height) {}
 
-    private void drawText(GuiGraphics graphics, Component text, int x, int y, int color) {
-        graphics.drawString(font, text, x, y, color, true);
+    private void drawText(GuiGraphicsExtractor graphics, Component text, int x, int y, int color) {
+        graphics.text(font, text, x, y, color, true);
     }
 
-    private void drawText(GuiGraphics graphics, String text, int x, int y, int color) {
+    private void drawText(GuiGraphicsExtractor graphics, String text, int x, int y, int color) {
         drawText(graphics, Component.literal(text), x, y, color);
     }
 
-    private void drawCenteredText(GuiGraphics graphics, Component text, int x, int y, int color) {
-        int halfWidth = font.width(text) / 2;
-        graphics.drawString(font, text, x - halfWidth, y, color, true);
+    private void drawCenteredText(GuiGraphicsExtractor graphics, Component text, int x, int y, int color) {
+        graphics.centeredText(font, text, x, y, color);
     }
 
-    private void drawCenteredText(GuiGraphics graphics, String text, int x, int y, int color) {
+    private void drawCenteredText(GuiGraphicsExtractor graphics, String text, int x, int y, int color) {
         drawCenteredText(graphics, Component.literal(text), x, y, color);
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         syncIntervalInputPosition();
         if (button != 0) {
             // Keep vanilla slot handling, including middle-click clone, on the item page.
-            return tab == 0 ? super.mouseClicked(mouseX, mouseY, button) : true;
+            return tab == 0 ? super.mouseClicked(event, doubleClick) : true;
         }
         if (inside(mouseX, mouseY, tabX(0), tabY(0), 26, 32)) {
             setTab(0);
@@ -599,26 +574,27 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
                         menu.showActionBarNotification(), !menu.showChatNotification());
                 return true;
             }
-            if (intervalInput != null && intervalInput.mouseClicked(mouseX, mouseY, button)) {
+            if (intervalInput != null && intervalInput.mouseClicked(event, doubleClick)) {
                 intervalInput.setFocused(true);
                 return true;
             }
             return true;
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent event) {
+        int keyCode = event.key();
         if (keyCode == GLFW.GLFW_KEY_F8) {
-            if (!SellBoxLayoutDebug.isConfiguredEnabled()) return super.keyPressed(keyCode, scanCode, modifiers);
+            if (!SellBoxLayoutDebug.isConfiguredEnabled()) return super.keyPressed(event);
             SellBoxLayoutDebug.toggle();
             SellBoxLayoutDebug.ensureSelected(tab);
             return true;
         }
         if (SellBoxLayoutDebug.isEnabled()) {
             if (keyCode == GLFW.GLFW_KEY_TAB) {
-                SellBoxLayoutDebug.selectNext(tab, hasShiftDown());
+                SellBoxLayoutDebug.selectNext(tab, event.hasShiftDown());
                 return true;
             }
             int dx = 0;
@@ -628,7 +604,7 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
             if (keyCode == GLFW.GLFW_KEY_UP) dy = -1;
             if (keyCode == GLFW.GLFW_KEY_DOWN) dy = 1;
             if (dx != 0 || dy != 0) {
-                int step = hasAltDown() ? 1 : 5;
+                int step = event.hasAltDown() ? 1 : 5;
                 SellBoxLayoutDebug.moveSelected(tab,
                         dx * step, dy * step);
                 syncIntervalInputPosition();
@@ -640,9 +616,9 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
                 intervalInput.setFocused(false);
                 return true;
             }
-            if (intervalInput.keyPressed(keyCode, scanCode, modifiers)) return true;
+            if (intervalInput.keyPressed(event)) return true;
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(event);
     }
 
     @Override
@@ -653,12 +629,12 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
     }
 
     @Override
-    public boolean charTyped(char codePoint, int modifiers) {
+    public boolean charTyped(CharacterEvent event) {
         if (tab == 1 && intervalInput != null && intervalInput.isFocused()
-                && intervalInput.charTyped(codePoint, modifiers)) {
+                && intervalInput.charTyped(event)) {
             return true;
         }
-        return super.charTyped(codePoint, modifiers);
+        return super.charTyped(event);
     }
 
     @Override
@@ -673,10 +649,5 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
 
     private static boolean inside(double mouseX, double mouseY, int x, int y, int width, int height) {
         return mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
-    }
-
-    private static void flushAll(GuiGraphics graphics) {
-        graphics.flush();
-        Minecraft.getInstance().renderBuffers().bufferSource().endBatch();
     }
 }

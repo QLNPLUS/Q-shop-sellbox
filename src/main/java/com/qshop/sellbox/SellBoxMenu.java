@@ -114,7 +114,7 @@ public final class SellBoxMenu extends AbstractContainerMenu {
 
     @Override
     public void removed(Player player) {
-        if (!player.level().isClientSide
+        if (!player.level().isClientSide()
                 && player.level().getBlockEntity(pos) instanceof SellBoxBlockEntity box) {
             box.onMenuClosed();
         }

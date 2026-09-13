@@ -33,7 +33,7 @@ public final class PriceRule {
     public String currency() { return currency; }
     public Kind kind() { return kind; }
     public boolean kubeJs() { return kubeJs; }
-    public int specificity() { return nbt.getAllKeys().size(); }
+    public int specificity() { return nbt.keySet().size(); }
 
     public boolean matches(ItemStack stack) {
         if (stack == null || stack.isEmpty()) {
@@ -71,7 +71,7 @@ public final class PriceRule {
         private static boolean matches(CompoundTag actual, CompoundTag expected) {
             if (expected.isEmpty()) return true;
             if (actual == null) return false;
-            for (String key : expected.getAllKeys()) {
+            for (String key : expected.keySet()) {
                 net.minecraft.nbt.Tag expectedValue = expected.get(key);
                 net.minecraft.nbt.Tag actualValue = actual.get(key);
                 if (expectedValue instanceof CompoundTag expectedCompound) {

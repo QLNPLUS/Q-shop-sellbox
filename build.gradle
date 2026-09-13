@@ -2,17 +2,18 @@ plugins {
     id 'java-library'
     id 'idea'
     id 'maven-publish'
-    id 'net.neoforged.moddev' version '2.0.141'
+    id 'net.neoforged.moddev' version '2.0.146'
 }
 
 version = mod_version
 group = mod_group_id
-base { archivesName = "${mod_id}-neoforge-1.21.1" }
+base { archivesName = "${mod_id}-neoforge-26.1.2" }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
 neoForge {
-    version = '21.1.248'
+    version = neo_version
+
     runs {
         client { client() }
         server { server() }
@@ -21,6 +22,7 @@ neoForge {
             logLevel = org.slf4j.event.Level.DEBUG
         }
     }
+
     mods {
         "${mod_id}" {
             sourceSet sourceSets.main
@@ -34,6 +36,7 @@ repositories {
     maven { name = 'Latvian'; url = 'https://maven.latvian.dev/releases' }
 }
 
+// 可选：把本地 jar 目录当作依赖来源（开发用；CI 不设置该属性）
 def localModsDir = findProperty('local_mods_dir') ? file(findProperty('local_mods_dir').toString()) : null
 def localMod = { String pattern ->
     localModsDir != null && localModsDir.exists() ? fileTree(localModsDir).matching { include pattern }.files : []
@@ -46,10 +49,10 @@ def addOptionalMod = { String configuration, String notation, String pattern ->
 // QShop 依赖 jar：路径来自 gradle.properties 的 qshop_jar，可用 -Pqshop_jar=<path> 覆盖。
 // 缺失时立即失败并给出可操作提示，不要退化成"一堆类找不到"的编译错误。
 def qshopJarFile = file(findProperty('qshop_jar') ?:
-        '../../q_shop/neoforge-1.21.1/build/libs/qshop-neoforge-1.21.1-1.7.0.jar')
+        '../../q_shop/neoforge-1.26.1.2/build/libs/qshop-neoforge-26.1.2-1.7.1.jar')
 if (!qshopJarFile.isFile()) {
     throw new GradleException("未找到 QShop 依赖 jar: ${qshopJarFile}\n" +
-            "请先构建 QShop（D:\\projects\\q_shop\\neoforge-1.21.1），或用 -Pqshop_jar=<path> 指定。")
+            "请先构建 QShop（D:\\projects\\q_shop\\neoforge-1.26.1.2），或用 -Pqshop_jar=<path> 指定。")
 }
 
 dependencies {
@@ -71,7 +74,7 @@ sourceSets {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-    options.release = 21
+    options.release = 25
 }
 
 tasks.register('smokeTest', JavaExec) {
@@ -80,17 +83,26 @@ tasks.register('smokeTest', JavaExec) {
     mainClass = 'com.qshop.sellbox.kubejs.SellBoxNbtSmokeTest'
 }
 
+// 本项目的 test 源集是 smokeTest 用的 main() 程序，没有 JUnit 用例；
+// Gradle 9 默认会因为"有测试源但发现不了测试"而失败，这里显式关掉。
+tasks.named('test') {
+    failOnNoDiscoveredTests = false
+}
+
 processResources {
-    inputs.properties([
-            mod_id: mod_id,
-            mod_name: mod_name,
-            mod_version: mod_version,
-            mod_license: mod_license,
-            kubejs_version: kubejs_version,
-    ])
+    def replaceProperties = [
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_version            : mod_version,
+            mod_license            : mod_license,
+            kubejs_version         : kubejs_version,
+            loader_version_range   : loader_version_range,
+            neo_version_range      : neo_version_range,
+            minecraft_version_range: minecraft_version_range,
+    ]
+    inputs.properties replaceProperties
     filesMatching('META-INF/neoforge.mods.toml') {
-        expand mod_id: mod_id, mod_name: mod_name, mod_version: mod_version,
-                mod_license: mod_license, kubejs_version: kubejs_version
+        expand replaceProperties
     }
 }
 
