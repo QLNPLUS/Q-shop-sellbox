@@ -4,11 +4,11 @@ Addon for [QShop](https://www.curseforge.com/minecraft/mc-mods/q-shop).
 
 ## Short Description
 
-An automatic selling container for QShop on Forge 1.20.1 and NeoForge 1.21.1 that sells stored items on a schedule or when its GUI closes and pays the configured owner.
+An automatic selling container for QShop on Forge 1.20.1, NeoForge 1.21.1, and NeoForge 26.1.2 that sells stored items on a schedule or when its GUI closes and pays the configured owner.
 
 ## Full Description
 
-QShop Sell Box is an addon for [QShop](https://www.curseforge.com/minecraft/mc-mods/q-shop) available for Forge 1.20.1 and NeoForge 1.21.1. It adds a dedicated automatic selling container for servers that use QShop as their currency system.
+QShop Sell Box is an addon for [QShop](https://www.curseforge.com/minecraft/mc-mods/q-shop) available for Forge 1.20.1, NeoForge 1.21.1, and NeoForge 26.1.2. It adds a dedicated automatic selling container for servers that use QShop as their currency system.
 
 Place items in the sell box, select the player who should receive the earnings, and choose when the contents should be sold. The box can sell automatically at a configurable interval or sell its contents when the GUI is closed. Earnings are deposited into the selected owner's QShop wallet, including when that player is offline.
 
@@ -49,7 +49,7 @@ The mod is designed to follow the visual and interaction style of vanilla contai
 
 ## Requirements
 
-- Minecraft Forge 1.20.1 with Forge 47.x, or Minecraft NeoForge 1.21.1 with NeoForge 21.1.x
+- Minecraft Forge 1.20.1 with Forge 47.x, Minecraft NeoForge 1.21.1 with NeoForge 21.1.x, or Minecraft NeoForge 26.1.2 with NeoForge 26.1.2.x
 - [QShop 1.1.0 or newer, before 2.0](https://www.curseforge.com/minecraft/mc-mods/q-shop)
 - KubeJS is optional. It is only required for KubeJS price scripts.
 - EMI is optional. The compatibility layer is only enabled when EMI is present.
@@ -58,9 +58,9 @@ QShop Sell Box is an addon and does not provide an independent currency system. 
 
 ## Installation
 
-1. Install Minecraft 1.20.1 with Forge 47.x.
+1. Install one of the supported Minecraft and loader combinations listed above.
 2. Install the required [QShop](https://www.curseforge.com/minecraft/mc-mods/q-shop) version.
-3. Put `qshop-sellbox-1.0.2.jar` into the server and client `mods` folders.
+3. Put the matching QShop Sell Box jar, such as `qshop_sellbox-neoforge-26.1.2-1.5.0.jar`, into the server and client `mods` folders.
 4. Start the game once to generate the common configuration file.
 
 The mod should be installed on both the server and the clients that open the GUI. The server is authoritative for ownership, selling, prices, and currency deposits.

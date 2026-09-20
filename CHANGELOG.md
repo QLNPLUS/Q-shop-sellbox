@@ -13,6 +13,12 @@ Release notes are grouped by Minecraft loader when a release supports both Forge
 - Added the asynchronous KubeJS `SellBox.queryPrice(item, callback)` client API.
 - Added the KubeJS `SellBoxEvents.afterSell` event with the sold item, player, dimension, unit price, and currency.
 
+### NeoForge 26.1.2
+
+#### Changed
+
+- Ported the 1.5.0 NeoForge implementation to Minecraft 26.1.2 and NeoForge 26.1.2.
+
 ## [1.4.0] - 2026-09-04
 
 ### NeoForge 1.21.1

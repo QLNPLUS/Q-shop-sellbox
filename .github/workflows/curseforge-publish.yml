@@ -90,6 +90,7 @@ jobs:
           RELEASE_VERSION: ${{ env.RELEASE_VERSION }}
         run: |
           version="${RELEASE_VERSION#v}"
+          version="$(printf '%s' "$version" | sed -E 's/-(forge|neoforge)-.*$//')"
           awk -v version="$version" '
             /^##[[:space:]]+/ {
               heading = $2

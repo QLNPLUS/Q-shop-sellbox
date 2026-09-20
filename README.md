@@ -1,6 +1,6 @@
 # QShop Sell Box
 
-QShop 1.2.3 的 NeoForge 1.21.1 附属模组。`qshop_sellbox-neoforge-1.21.1-1.1.1.jar` 需要和 QShop 一起放入 `mods`。
+QShop 1.7.1 的 NeoForge 26.1.2 附属模组。`qshop_sellbox-neoforge-26.1.2-1.5.0.jar` 需要和 QShop 一起放入 `mods`。
 
 ## 功能
 
@@ -14,7 +14,7 @@ QShop 1.2.3 的 NeoForge 1.21.1 附属模组。`qshop_sellbox-neoforge-1.21.1-1.
 
 ## 配置
 
-这是 Forge `COMMON` 配置，首次启动后生成：
+这是 NeoForge `COMMON` 配置，首次启动后生成：
 
 ```text
 config/qshop_sellbox-common.toml
