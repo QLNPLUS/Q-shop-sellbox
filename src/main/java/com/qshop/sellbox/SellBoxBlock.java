@@ -57,7 +57,7 @@ public final class SellBoxBlock extends BaseEntityBlock {
         if (!(player instanceof ServerPlayer serverPlayer)) return InteractionResult.SUCCESS;
         if (level.getBlockEntity(pos) instanceof SellBoxBlockEntity box) {
             if (!box.canOpen(serverPlayer)) {
-                serverPlayer.displayClientMessage(
+                serverPlayer.sendSystemMessage(
                         Component.translatable("qshop_sellbox.message.not_owner_open"), true);
                 return InteractionResult.CONSUME;
             }
