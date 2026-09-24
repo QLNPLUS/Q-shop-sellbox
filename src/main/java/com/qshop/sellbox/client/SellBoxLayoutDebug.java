@@ -48,7 +48,8 @@ public final class SellBoxLayoutDebug {
         INTERVAL_INPUT("Interval input", 1),
         INTERVAL_UNIT("Interval unit button", 1),
         ACTION_BAR_NOTIFICATION("Action Bar checkbox", 1),
-        CHAT_NOTIFICATION("Chat checkbox", 1);
+        CHAT_NOTIFICATION("Chat checkbox", 1),
+        OWNER_ONLY_OPEN("Owner-only open checkbox", 1);
 
         private final String label;
         private final int tab;
@@ -178,6 +179,7 @@ public final class SellBoxLayoutDebug {
         positions.put(Widget.INTERVAL_UNIT, new Position(5, -17));
         positions.put(Widget.ACTION_BAR_NOTIFICATION, new Position(0, -19));
         positions.put(Widget.CHAT_NOTIFICATION, new Position(0, -16));
+        positions.put(Widget.OWNER_ONLY_OPEN, new Position(0, -13));
         return positions;
     }
 

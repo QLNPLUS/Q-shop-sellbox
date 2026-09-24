@@ -6,6 +6,7 @@ QShop 1.7.1 的 NeoForge 26.1.2 附属模组。`qshop_sellbox-neoforge-26.1.2-1.
 
 - 自动售货箱有 27 个物品槽，第一页用于放入待售物品。
 - 第二页显示归属玩家头像、名字和 UUID，可从所有登录过服务器的玩家中选择归属。
+- 第二页可勾选“仅归属玩家可打开容器”，启用后其他玩家无法打开或认领该售货箱。
 - 出售模式和间隔保存在每个容器中：`自动间隔` 支持输入数值并切换秒、分、小时、游戏日，`关闭 GUI 时出售` 在容器 GUI 关闭时出售。
 - 归属使用 UUID 保存，并记录所有登录过服务器的玩家 UUID 和最新名字。
 - 归属者离线时收益通过 QShop 的 UUID 货币 API 直接写入对应玩家的钱包数据，登录后由 QShop 正常读取并同步。
@@ -34,9 +35,13 @@ nbtMultipliers = [
   "{quality:refined}|1.1",
   "minecraft:diamond|{rarity:rare,quality:refined}|1.15"
 ]
+showPriceTooltip = true
+priceTooltipCurrencies = ["coins"]
 ```
 
 `priceRules` 格式为 `物品 ID|价格|货币 ID[|NBT]`。`nbtMultipliers` 的 `NBT|倍率` 是通用规则，会匹配所有带有这组 NBT 的物品；`物品 ID|NBT|倍率` 只匹配指定物品。NBT 支持一条规则中写多个字段，使用子集匹配。多个匹配规则会相乘，例如 `rarity:rare` 和 `quality:refined` 同时命中时会得到 `1.2 * 1.1`。
+
+`showPriceTooltip` 控制是否显示售价；`priceTooltipCurrencies` 按货币 ID 筛选提示，例如只显示 `coins`。列表留空时显示所有货币，配置非空列表后只显示其中列出的货币；静态价格和 KubeJS 动态价格都适用。
 
 物品 NBT 的键和值使用 Minecraft SNBT 写法，例如 `{rarity:'rare',quality:'refined'}`。配置中的 `|` 是字段分隔符，因此不要在 NBT 值中使用未转义的 `|`。
 

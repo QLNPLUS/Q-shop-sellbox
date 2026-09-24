@@ -270,21 +270,33 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
         drawButtonLabel(graphics, unitLabel, unitButtonX, unitButtonY,
                 unitButtonWidth, BUTTON_HEIGHT);
 
-        drawNotificationRow(graphics, mouseX, mouseY, SellBoxLayoutDebug.Widget.ACTION_BAR_NOTIFICATION,
+        drawCheckboxRow(graphics, mouseX, mouseY, SellBoxLayoutDebug.Widget.ACTION_BAR_NOTIFICATION,
                 Component.translatable("qshop_sellbox.setting.action_bar"),
                 menu.showActionBarNotification());
-        drawNotificationRow(graphics, mouseX, mouseY, SellBoxLayoutDebug.Widget.CHAT_NOTIFICATION,
+        drawCheckboxRow(graphics, mouseX, mouseY, SellBoxLayoutDebug.Widget.CHAT_NOTIFICATION,
                 Component.translatable("qshop_sellbox.setting.chat"),
                 menu.showChatNotification());
+        drawCheckboxRow(graphics, mouseX, mouseY, SellBoxLayoutDebug.Widget.OWNER_ONLY_OPEN,
+                Component.translatable("qshop_sellbox.setting.owner_only_open"),
+                menu.onlyOwnerCanOpen());
     }
 
-    private void drawNotificationRow(GuiGraphicsExtractor graphics, int mouseX, int mouseY,
-                                     SellBoxLayoutDebug.Widget widget, Component label, boolean checked) {
+    private void drawCheckboxRow(GuiGraphicsExtractor graphics, int mouseX, int mouseY,
+                                 SellBoxLayoutDebug.Widget widget, Component label, boolean checked) {
         int x = screenX(widget, 8);
-        int y = screenY(widget, widget == SellBoxLayoutDebug.Widget.ACTION_BAR_NOTIFICATION ? 141 : 153);
+        int y = screenY(widget, checkboxNormalY(widget));
         boolean hovered = inside(mouseX, mouseY, x, y, imageWidth - 16, 12);
         SellBoxTextures.checkbox(graphics, x, y, checked, hovered);
         drawText(graphics, label, x + 16, y + 2, TEXT_COLOR);
+    }
+
+    private static int checkboxNormalY(SellBoxLayoutDebug.Widget widget) {
+        return switch (widget) {
+            case ACTION_BAR_NOTIFICATION -> 141;
+            case CHAT_NOTIFICATION -> 153;
+            case OWNER_ONLY_OPEN -> 165;
+            default -> throw new IllegalArgumentException("Not a checkbox row: " + widget);
+        };
     }
 
     private void drawButton(GuiGraphicsExtractor graphics, int x, int y, Component label,
@@ -347,9 +359,10 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
     private void sendSettings(SellMode mode, int intervalTicks) {
         int normalized = Math.max(20, Math.min(intervalTicks, SellBoxBlockEntity.MAX_INTERVAL_TICKS));
         menu.setSettingsData(mode, normalized, menu.showActionBarNotification(),
-                menu.showChatNotification());
+                menu.showChatNotification(), menu.onlyOwnerCanOpen());
         SellBoxNetwork.sendSettings(menu.pos(), mode, normalized,
-                menu.showActionBarNotification(), menu.showChatNotification());
+                menu.showActionBarNotification(), menu.showChatNotification(),
+                menu.onlyOwnerCanOpen());
     }
 
     private int readIntervalTicks() {
@@ -475,9 +488,9 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
                 yield new DebugBounds(screenX(widget, 104), screenY(widget, 120),
                         buttonWidth(unit, BUTTON_MIN_WIDTH, imageWidth - 112), BUTTON_HEIGHT);
             }
-            case ACTION_BAR_NOTIFICATION, CHAT_NOTIFICATION -> {
-                int normalY = widget == SellBoxLayoutDebug.Widget.ACTION_BAR_NOTIFICATION ? 141 : 153;
-                yield new DebugBounds(screenX(widget, 8), screenY(widget, normalY), imageWidth - 16, 12);
+            case ACTION_BAR_NOTIFICATION, CHAT_NOTIFICATION, OWNER_ONLY_OPEN -> {
+                yield new DebugBounds(screenX(widget, 8),
+                        screenY(widget, checkboxNormalY(widget)), imageWidth - 16, 12);
             }
         };
     }
@@ -549,7 +562,8 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
             int firstModeY = screenY(SellBoxLayoutDebug.Widget.MODE_INTERVAL, 79);
             if (inside(mouseX, mouseY, firstModeX, firstModeY, modeWidths[0], 16)) {
                 menu.setSettingsData(SellMode.INTERVAL, menu.saleIntervalTicks(),
-                        menu.showActionBarNotification(), menu.showChatNotification());
+                        menu.showActionBarNotification(), menu.showChatNotification(),
+                        menu.onlyOwnerCanOpen());
                 return true;
             }
             int secondModeX = screenX(SellBoxLayoutDebug.Widget.MODE_CLOSED_GUI,
@@ -557,23 +571,38 @@ public final class SellBoxScreen extends AbstractContainerScreen<SellBoxMenu> {
             int secondModeY = screenY(SellBoxLayoutDebug.Widget.MODE_CLOSED_GUI, 79);
             if (inside(mouseX, mouseY, secondModeX, secondModeY, modeWidths[1], 16)) {
                 menu.setSettingsData(SellMode.CLOSED_GUI, menu.saleIntervalTicks(),
-                        menu.showActionBarNotification(), menu.showChatNotification());
+                        menu.showActionBarNotification(), menu.showChatNotification(),
+                        menu.onlyOwnerCanOpen());
                 return true;
             }
             if (inside(mouseX, mouseY,
                     screenX(SellBoxLayoutDebug.Widget.ACTION_BAR_NOTIFICATION, 8),
-                    screenY(SellBoxLayoutDebug.Widget.ACTION_BAR_NOTIFICATION, 141),
+                    screenY(SellBoxLayoutDebug.Widget.ACTION_BAR_NOTIFICATION,
+                            checkboxNormalY(SellBoxLayoutDebug.Widget.ACTION_BAR_NOTIFICATION)),
                     imageWidth - 16, 12)) {
                 menu.setSettingsData(menu.sellMode(), menu.saleIntervalTicks(),
-                        !menu.showActionBarNotification(), menu.showChatNotification());
+                        !menu.showActionBarNotification(), menu.showChatNotification(),
+                        menu.onlyOwnerCanOpen());
                 return true;
             }
             if (inside(mouseX, mouseY,
                     screenX(SellBoxLayoutDebug.Widget.CHAT_NOTIFICATION, 8),
-                    screenY(SellBoxLayoutDebug.Widget.CHAT_NOTIFICATION, 153),
+                    screenY(SellBoxLayoutDebug.Widget.CHAT_NOTIFICATION,
+                            checkboxNormalY(SellBoxLayoutDebug.Widget.CHAT_NOTIFICATION)),
                     imageWidth - 16, 12)) {
                 menu.setSettingsData(menu.sellMode(), menu.saleIntervalTicks(),
-                        menu.showActionBarNotification(), !menu.showChatNotification());
+                        menu.showActionBarNotification(), !menu.showChatNotification(),
+                        menu.onlyOwnerCanOpen());
+                return true;
+            }
+            if (inside(mouseX, mouseY,
+                    screenX(SellBoxLayoutDebug.Widget.OWNER_ONLY_OPEN, 8),
+                    screenY(SellBoxLayoutDebug.Widget.OWNER_ONLY_OPEN,
+                            checkboxNormalY(SellBoxLayoutDebug.Widget.OWNER_ONLY_OPEN)),
+                    imageWidth - 16, 12)) {
+                menu.setSettingsData(menu.sellMode(), menu.saleIntervalTicks(),
+                        menu.showActionBarNotification(), menu.showChatNotification(),
+                        !menu.onlyOwnerCanOpen());
                 return true;
             }
             if (intervalInput != null && intervalInput.mouseClicked(event, doubleClick)) {

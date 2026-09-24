@@ -38,6 +38,8 @@ The mod is designed to follow the visual and interaction style of vanilla contai
 - Offline earnings stored through QShop's UUID currency API and available when the owner logs in.
 - Optional Action Bar and chat notifications for sales and synchronized offline earnings.
 - Optional item price tooltips.
+- Optional owner-only access for each sell box.
+- Price tooltips can be filtered by configured currency IDs.
 - Server-side price calculation for consistent tooltip and transaction results.
 - Configurable currencies using QShop currency IDs and registered display names.
 - Static item prices and NBT-specific exact price rules.
@@ -89,9 +91,16 @@ nbtMultipliers = [
 ]
 showPriceTooltip = true
 debugDynamicPrice = false
+priceTooltipCurrencies = ["coins"]
+enableLayoutDebug = false
 ```
 
-### Static price rules
+`priceRules` uses `item_id|price|currency_id[|nbt]`.
+`nbtMultipliers` can use `nbt|multiplier` for all items or
+`item_id|nbt|multiplier` for one item. Multiple matching NBT rules are multiplied together.
+`priceTooltipCurrencies` filters tooltips by currency ID. An empty list shows all currencies;
+otherwise only the listed IDs are shown. Each sell box also has an owner-only access checkbox
+on its settings page.
 
 `priceRules` uses this format:
 

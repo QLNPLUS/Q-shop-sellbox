@@ -29,6 +29,7 @@ public final class SellBoxClient {
     private static boolean hasDynamicPriceFunction;
     private static int nextPriceRequestId;
     private static final Map<String, String> CURRENCY_DISPLAY_NAMES = new HashMap<>();
+    private static final Set<String> PRICE_TOOLTIP_CURRENCIES = new HashSet<>();
     private static final Map<String, PriceQuote> DYNAMIC_PRICE_CACHE = new HashMap<>();
     private static final Set<String> DYNAMIC_NO_PRICE = new HashSet<>();
     private static final Map<Integer, String> PENDING_PRICE_REQUESTS = new HashMap<>();
@@ -46,7 +47,8 @@ public final class SellBoxClient {
                 && screen.getMenu().pos().equals(packet.pos())) {
             screen.getMenu().setOwnerData(packet.owner(), packet.ownerName());
             screen.getMenu().setSettingsData(packet.sellMode(), packet.saleIntervalTicks(),
-                    packet.showActionBarNotification(), packet.showChatNotification());
+                    packet.showActionBarNotification(), packet.showChatNotification(),
+                    packet.onlyOwnerCanOpen());
             screen.refreshIntervalInput();
         }
     }
@@ -57,6 +59,8 @@ public final class SellBoxClient {
         hasDynamicPriceFunction = packet.hasDynamicPriceFunction();
         CURRENCY_DISPLAY_NAMES.clear();
         CURRENCY_DISPLAY_NAMES.putAll(packet.currencyDisplayNames());
+        PRICE_TOOLTIP_CURRENCIES.clear();
+        PRICE_TOOLTIP_CURRENCIES.addAll(packet.priceTooltipCurrencies());
         DYNAMIC_PRICE_CACHE.clear();
         DYNAMIC_NO_PRICE.clear();
         PENDING_PRICE_REQUESTS.clear();
@@ -122,7 +126,7 @@ public final class SellBoxClient {
             return;
         }
         var quote = SellBoxPrices.resolveClient(event.getItemStack());
-        if (quote != null) {
+        if (quote != null && shouldShowPriceTooltip(quote.currency())) {
             event.getToolTip().add(net.minecraft.network.chat.Component.translatable(
                     "qshop_sellbox.tooltip.price", quote.formattedPrice(),
                     currencyDisplayName(quote.currency())));
@@ -149,9 +153,14 @@ public final class SellBoxClient {
     }
 
     private static void addPriceTooltip(ItemTooltipEvent event, PriceQuote quote) {
+        if (!shouldShowPriceTooltip(quote.currency())) return;
         event.getToolTip().add(net.minecraft.network.chat.Component.translatable(
                 "qshop_sellbox.tooltip.price", quote.formattedPrice(),
                 currencyDisplayName(quote.currency())));
+    }
+
+    private static boolean shouldShowPriceTooltip(String currencyId) {
+        return PRICE_TOOLTIP_CURRENCIES.isEmpty() || PRICE_TOOLTIP_CURRENCIES.contains(currencyId);
     }
 
     private static String currencyDisplayName(String currencyId) {
@@ -169,6 +178,7 @@ public final class SellBoxClient {
         showPriceTooltip = true;
         hasDynamicPriceFunction = false;
         CURRENCY_DISPLAY_NAMES.clear();
+        PRICE_TOOLTIP_CURRENCIES.clear();
         DYNAMIC_PRICE_CACHE.clear();
         DYNAMIC_NO_PRICE.clear();
         PENDING_PRICE_REQUESTS.clear();

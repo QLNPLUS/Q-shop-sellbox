@@ -22,6 +22,9 @@ public final class SellBoxConfig {
     public static final ModConfigSpec.BooleanValue SHOW_PRICE_TOOLTIP = BUILDER
             .comment("Whether item tooltips show the configured sell price.")
             .define("showPriceTooltip", true);
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> PRICE_TOOLTIP_CURRENCIES = BUILDER
+            .comment("Currency IDs allowed in item price tooltips. Leave empty to show all currencies.")
+            .defineList("priceTooltipCurrencies", List.of(), value -> value instanceof String s && !s.isBlank());
     public static final ModConfigSpec.BooleanValue ENABLE_LAYOUT_DEBUG = BUILDER
             .comment("DEBUG ONLY. Enables the F8 GUI layout editor. Disabled by default.")
             .define("enableLayoutDebug", false);
@@ -52,6 +55,14 @@ public final class SellBoxConfig {
 
     public static boolean showPriceTooltip() {
         return SHOW_PRICE_TOOLTIP.get();
+    }
+
+    public static List<String> priceTooltipCurrencies() {
+        List<String> currencies = new ArrayList<>();
+        for (String currency : PRICE_TOOLTIP_CURRENCIES.get()) {
+            if (currency != null && !currency.isBlank()) currencies.add(currency.trim());
+        }
+        return List.copyOf(currencies);
     }
 
     public static boolean layoutDebugEnabled() {
