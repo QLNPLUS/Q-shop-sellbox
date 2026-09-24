@@ -4,7 +4,7 @@ All notable changes to QShop Sell Box are documented here.
 
 Release notes are grouped by Minecraft loader when a release supports both Forge and NeoForge.
 
-## [1.6.0] - 2026-09-24
+## [1.6.0] - 2026-09-25
 
 ### Added
 
