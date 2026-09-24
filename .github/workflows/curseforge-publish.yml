@@ -116,6 +116,11 @@ jobs:
           chmod +x sellbox-forge-1.20.1/gradlew
           (cd sellbox-forge-1.20.1 && ./gradlew build --no-daemon -Pqshop_jar="../$QSHOP_JAR")
 
+      - name: Verify Forge release artifact
+        run: |
+          jar="sellbox-forge-1.20.1/build/libs/qshop-sellbox-forge-1.20.1-${CURSEFORGE_VERSION}.jar"
+          test -f "$jar" || { echo "Expected release jar not found: $jar"; exit 1; }
+
       - name: Prepare current Forge changelog
         working-directory: sellbox-forge-1.20.1
         env:
@@ -145,7 +150,7 @@ jobs:
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           github-tag: ${{ env.RELEASE_VERSION }}
-          files: sellbox-forge-1.20.1/build/libs/qshop-sellbox-forge-1.20.1-*.jar
+          files: sellbox-forge-1.20.1/build/libs/qshop-sellbox-forge-1.20.1-${{ env.CURSEFORGE_VERSION }}.jar
           version: ${{ env.CURSEFORGE_VERSION }}
           name: QShop Sell Box ${{ env.CURSEFORGE_VERSION }} Forge 1.20.1
           version-type: release
@@ -221,6 +226,11 @@ jobs:
           chmod +x sellbox-neoforge-1.21.1/gradlew
           (cd sellbox-neoforge-1.21.1 && ./gradlew build --no-daemon -Pqshop_jar="../$QSHOP_JAR")
 
+      - name: Verify NeoForge 1.21.1 release artifact
+        run: |
+          jar="sellbox-neoforge-1.21.1/build/libs/qshop_sellbox-neoforge-1.21.1-${CURSEFORGE_VERSION}.jar"
+          test -f "$jar" || { echo "Expected release jar not found: $jar"; exit 1; }
+
       - name: Prepare current NeoForge changelog
         working-directory: sellbox-neoforge-1.21.1
         env:
@@ -250,7 +260,7 @@ jobs:
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           github-tag: ${{ env.RELEASE_VERSION }}
-          files: sellbox-neoforge-1.21.1/build/libs/qshop_sellbox-neoforge-1.21.1-*.jar
+          files: sellbox-neoforge-1.21.1/build/libs/qshop_sellbox-neoforge-1.21.1-${{ env.CURSEFORGE_VERSION }}.jar
           version: ${{ env.CURSEFORGE_VERSION }}
           name: QShop Sell Box ${{ env.CURSEFORGE_VERSION }} NeoForge 1.21.1
           version-type: release
@@ -326,6 +336,11 @@ jobs:
           chmod +x sellbox-neoforge-1.26.1.2/gradlew
           (cd sellbox-neoforge-1.26.1.2 && ./gradlew build --no-daemon -Pqshop_jar="../$QSHOP_JAR")
 
+      - name: Verify NeoForge 26.1.2 release artifact
+        run: |
+          jar="sellbox-neoforge-1.26.1.2/build/libs/qshop_sellbox-neoforge-26.1.2-${CURSEFORGE_VERSION}.jar"
+          test -f "$jar" || { echo "Expected release jar not found: $jar"; exit 1; }
+
       - name: Prepare current NeoForge 26.1.2 changelog
         working-directory: sellbox-neoforge-1.26.1.2
         env:
@@ -355,7 +370,7 @@ jobs:
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           github-tag: ${{ env.RELEASE_VERSION }}
-          files: sellbox-neoforge-1.26.1.2/build/libs/qshop_sellbox-neoforge-26.1.2-*.jar
+          files: sellbox-neoforge-1.26.1.2/build/libs/qshop_sellbox-neoforge-26.1.2-${{ env.CURSEFORGE_VERSION }}.jar
           version: ${{ env.CURSEFORGE_VERSION }}
           name: QShop Sell Box ${{ env.CURSEFORGE_VERSION }} NeoForge 26.1.2
           version-type: release
