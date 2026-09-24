@@ -1,6 +1,6 @@
 # QShop Sell Box
 
-QShop 1.7.1 的 NeoForge 26.1.2 附属模组。`qshop_sellbox-neoforge-26.1.2-1.5.0.jar` 需要和 QShop 一起放入 `mods`。
+QShop 1.7.1 的 NeoForge 26.1.2 附属模组。`qshop_sellbox-neoforge-26.1.2-1.6.0.jar` 需要和 QShop 一起放入 `mods`。
 
 ## 功能
 

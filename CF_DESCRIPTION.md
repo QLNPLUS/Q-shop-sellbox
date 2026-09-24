@@ -62,7 +62,7 @@ QShop Sell Box is an addon and does not provide an independent currency system. 
 
 1. Install one of the supported Minecraft and loader combinations listed above.
 2. Install the required [QShop](https://www.curseforge.com/minecraft/mc-mods/q-shop) version.
-3. Put the matching QShop Sell Box jar, such as `qshop_sellbox-neoforge-26.1.2-1.5.0.jar`, into the server and client `mods` folders.
+3. Put the matching QShop Sell Box jar, such as `qshop_sellbox-neoforge-26.1.2-1.6.0.jar`, into the server and client `mods` folders.
 4. Start the game once to generate the common configuration file.
 
 The mod should be installed on both the server and the clients that open the GUI. The server is authoritative for ownership, selling, prices, and currency deposits.
