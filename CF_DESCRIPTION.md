@@ -32,6 +32,7 @@ The mod is designed to follow the visual and interaction style of vanilla contai
 - Owner selection from every player recorded as having joined the server.
 - UUID-based ownership, so changing a player's name does not change the destination of future earnings.
 - Online and offline owner status display.
+- Optional owner-only access for each sell box.
 - Per-container selling mode and interval settings.
 - Interval units for seconds, minutes, hours, and game days.
 - Sell-on-GUI-close mode for manual batch selling.
@@ -88,10 +89,15 @@ nbtMultipliers = [
   "minecraft:diamond|{rarity:rare,quality:refined}|1.15"
 ]
 showPriceTooltip = true
+priceTooltipCurrencies = ["coins"]
 debugDynamicPrice = false
 ```
 
 ### Static price rules
+
+`priceTooltipCurrencies` filters tooltips by currency ID. An empty list shows all currencies;
+otherwise only the listed IDs are shown. Each sell box also has an owner-only access checkbox
+on its settings page.
 
 `priceRules` uses this format:
 

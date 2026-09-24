@@ -56,6 +56,11 @@ public final class SellBoxBlock extends BaseEntityBlock {
                                                Player player, BlockHitResult hit) {
         if (!(player instanceof ServerPlayer serverPlayer)) return InteractionResult.SUCCESS;
         if (level.getBlockEntity(pos) instanceof SellBoxBlockEntity box) {
+            if (!box.canOpen(serverPlayer)) {
+                serverPlayer.displayClientMessage(
+                        Component.translatable("qshop_sellbox.message.not_owner_open"), true);
+                return InteractionResult.CONSUME;
+            }
             serverPlayer.openMenu(new net.minecraft.world.MenuProvider() {
                 @Override
                 public Component getDisplayName() {

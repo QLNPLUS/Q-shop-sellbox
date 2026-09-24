@@ -32,6 +32,7 @@ public final class SellBoxBlockEntity extends BlockEntity {
     private int saleIntervalTicks = 1200;
     private boolean actionBarNotifications = true;
     private boolean chatNotifications = true;
+    private boolean onlyOwnerCanOpen;
     private long nextSaleTick = -1L;
     private long pendingCloseSaleTick = -1L;
 
@@ -66,9 +67,14 @@ public final class SellBoxBlockEntity extends BlockEntity {
     public int saleIntervalTicks() { return saleIntervalTicks; }
     public boolean showActionBarNotification() { return actionBarNotifications; }
     public boolean showChatNotification() { return chatNotifications; }
+    public boolean onlyOwnerCanOpen() { return onlyOwnerCanOpen; }
 
     public boolean canEditOwner(Player player) {
         return player.hasPermissions(2) || (owner != null && owner.equals(player.getUUID()));
+    }
+
+    public boolean canOpen(Player player) {
+        return !onlyOwnerCanOpen || owner == null || owner.equals(player.getUUID());
     }
 
     public void setOwner(UUID uuid, String name) {
@@ -81,11 +87,13 @@ public final class SellBoxBlockEntity extends BlockEntity {
     }
 
     public void setSettings(SellMode mode, int intervalTicks,
-                            boolean showActionBarNotification, boolean showChatNotification) {
+                            boolean showActionBarNotification, boolean showChatNotification,
+                            boolean onlyOwnerCanOpen) {
         sellMode = mode == null ? SellMode.INTERVAL : mode;
         saleIntervalTicks = Math.max(20, Math.min(intervalTicks, MAX_INTERVAL_TICKS));
         actionBarNotifications = showActionBarNotification;
         chatNotifications = showChatNotification;
+        this.onlyOwnerCanOpen = onlyOwnerCanOpen;
         if (sellMode != SellMode.CLOSED_GUI) pendingCloseSaleTick = -1L;
         nextSaleTick = level == null ? -1L : level.getGameTime() + saleIntervalTicks;
         setChanged();
@@ -116,6 +124,7 @@ public final class SellBoxBlockEntity extends BlockEntity {
         tag.putInt("saleIntervalTicks", saleIntervalTicks);
         tag.putBoolean("showActionBarNotification", actionBarNotifications);
         tag.putBoolean("showChatNotification", chatNotifications);
+        tag.putBoolean("onlyOwnerCanOpen", onlyOwnerCanOpen);
         if (nextSaleTick >= 0L) tag.putLong("nextSaleTick", nextSaleTick);
     }
 
@@ -132,6 +141,7 @@ public final class SellBoxBlockEntity extends BlockEntity {
                 || tag.getBoolean("showActionBarNotification");
         chatNotifications = !tag.contains("showChatNotification")
                 || tag.getBoolean("showChatNotification");
+        onlyOwnerCanOpen = tag.getBoolean("onlyOwnerCanOpen");
         nextSaleTick = tag.contains("nextSaleTick") ? tag.getLong("nextSaleTick") : -1L;
     }
 
