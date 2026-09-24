@@ -170,16 +170,16 @@ public final class SellBoxLayoutDebug {
         positions.put(Widget.OWNER_TITLE, new Position(0, 0));
         positions.put(Widget.OWNER_AVATAR, new Position(0, 0));
         positions.put(Widget.OWNER_INFO, new Position(-1, -4));
-        positions.put(Widget.OWNER_BUTTON, new Position(-1, -3));
-        positions.put(Widget.MODE_LABEL, new Position(0, -9));
-        positions.put(Widget.MODE_INTERVAL, new Position(-1, -7));
-        positions.put(Widget.MODE_CLOSED_GUI, new Position(0, -7));
-        positions.put(Widget.INTERVAL_LABEL, new Position(0, -12));
-        positions.put(Widget.INTERVAL_INPUT, new Position(0, -17));
-        positions.put(Widget.INTERVAL_UNIT, new Position(5, -17));
-        positions.put(Widget.ACTION_BAR_NOTIFICATION, new Position(0, -19));
-        positions.put(Widget.CHAT_NOTIFICATION, new Position(0, -16));
-        positions.put(Widget.OWNER_ONLY_OPEN, new Position(0, -13));
+        positions.put(Widget.OWNER_BUTTON, new Position(129, -23));
+        positions.put(Widget.MODE_LABEL, new Position(0, -24));
+        positions.put(Widget.MODE_INTERVAL, new Position(-1, -22));
+        positions.put(Widget.MODE_CLOSED_GUI, new Position(0, -22));
+        positions.put(Widget.INTERVAL_LABEL, new Position(0, -27));
+        positions.put(Widget.INTERVAL_INPUT, new Position(0, -32));
+        positions.put(Widget.INTERVAL_UNIT, new Position(5, -32));
+        positions.put(Widget.ACTION_BAR_NOTIFICATION, new Position(0, -34));
+        positions.put(Widget.CHAT_NOTIFICATION, new Position(0, -31));
+        positions.put(Widget.OWNER_ONLY_OPEN, new Position(0, -28));
         return positions;
     }
 
