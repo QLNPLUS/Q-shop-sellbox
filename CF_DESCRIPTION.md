@@ -22,6 +22,7 @@ paid to the configured owner through QShop's currency system.
 - Sell-on-GUI-close mode.
 - Offline earnings written directly to the owner's QShop wallet through the UUID currency API.
 - Configurable Action Bar and chat notifications.
+- Optional owner-only access for each sell box.
 - Configurable item price tooltips.
 - Configurable price and currency rules.
 - Generic NBT multipliers that can match multiple NBT fields on any item.
@@ -59,12 +60,16 @@ nbtMultipliers = [
   "minecraft:diamond|{rarity:rare,quality:refined}|1.15"
 ]
 showPriceTooltip = true
+priceTooltipCurrencies = ["coins"]
 enableLayoutDebug = false
 ```
 
 `priceRules` uses `item_id|price|currency_id[|nbt]`.
 `nbtMultipliers` can use `nbt|multiplier` for all items or
 `item_id|nbt|multiplier` for one item. Multiple matching NBT rules are multiplied together.
+`priceTooltipCurrencies` filters tooltips by currency ID. An empty list shows all currencies;
+otherwise only the listed IDs are shown. Each sell box also has an owner-only access checkbox
+on its settings page.
 
 ## KubeJS Pricing
 

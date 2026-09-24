@@ -20,7 +20,7 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 public final class SellBoxNetwork {
-    private static final String PROTOCOL = "3";
+    private static final String PROTOCOL = "4";
     private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             ResourceLocation.fromNamespaceAndPath(SellBoxMod.MODID, "main"),
             () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
@@ -47,7 +47,8 @@ public final class SellBoxNetwork {
         CHANNEL.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
                 new SyncOwnersPacket(box.getBlockPos(), box.owner(), box.ownerName(),
                         box.sellMode(), box.saleIntervalTicks(),
-                        box.showActionBarNotification(), box.showChatNotification()));
+                        box.showActionBarNotification(), box.showChatNotification(),
+                        box.onlyOwnerCanOpen()));
     }
 
     public static void broadcastOwner(MinecraftServer server, SellBoxBlockEntity box) {
@@ -56,6 +57,10 @@ public final class SellBoxNetwork {
                     box.getBlockPos().getY() + 0.5D, box.getBlockPos().getZ() + 0.5D) <= 64D
                     && player.containerMenu instanceof SellBoxMenu menu
                     && menu.pos().equals(box.getBlockPos())) {
+                if (!box.canOpen(player)) {
+                    player.closeContainer();
+                    continue;
+                }
                 sendOwners(player, box);
             }
         }
@@ -65,7 +70,7 @@ public final class SellBoxNetwork {
         CHANNEL.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
                 new SyncPricesPacket(SellBoxConfig.defaultCurrency(), SellBoxPrices.serverRules(),
                         SellBoxConfig.showPriceTooltip(), SellBoxPrices.hasDynamicPriceFunction(),
-                        currencyDisplayNames()));
+                        currencyDisplayNames(), SellBoxConfig.priceTooltipCurrencies()));
     }
 
     public static void sendClaimOwner(BlockPos pos) {
@@ -73,9 +78,10 @@ public final class SellBoxNetwork {
     }
 
     public static void sendSettings(BlockPos pos, SellMode mode, int intervalTicks,
-                                    boolean showActionBarNotification, boolean showChatNotification) {
+                                    boolean showActionBarNotification, boolean showChatNotification,
+                                    boolean onlyOwnerCanOpen) {
         CHANNEL.sendToServer(new SetSettingsPacket(pos, mode, intervalTicks,
-                showActionBarNotification, showChatNotification));
+                showActionBarNotification, showChatNotification, onlyOwnerCanOpen));
     }
 
     public static void sendPriceQuery(int requestId, net.minecraft.world.item.ItemStack stack) {
@@ -85,7 +91,8 @@ public final class SellBoxNetwork {
     public static void broadcastPrices(MinecraftServer server) {
         SyncPricesPacket packet = new SyncPricesPacket(SellBoxConfig.defaultCurrency(),
                 SellBoxPrices.serverRules(), SellBoxConfig.showPriceTooltip(),
-                SellBoxPrices.hasDynamicPriceFunction(), currencyDisplayNames());
+                SellBoxPrices.hasDynamicPriceFunction(), currencyDisplayNames(),
+                SellBoxConfig.priceTooltipCurrencies());
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             CHANNEL.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player), packet);
         }
@@ -103,7 +110,8 @@ public final class SellBoxNetwork {
 
     public record SyncOwnersPacket(BlockPos pos, UUID owner, String ownerName,
                                    SellMode sellMode, int saleIntervalTicks,
-                                   boolean showActionBarNotification, boolean showChatNotification) {
+                                   boolean showActionBarNotification, boolean showChatNotification,
+                                   boolean onlyOwnerCanOpen) {
         public static void encode(SyncOwnersPacket packet, FriendlyByteBuf buf) {
             buf.writeBlockPos(packet.pos);
             buf.writeBoolean(packet.owner != null);
@@ -113,6 +121,7 @@ public final class SellBoxNetwork {
             buf.writeVarInt(packet.saleIntervalTicks);
             buf.writeBoolean(packet.showActionBarNotification);
             buf.writeBoolean(packet.showChatNotification);
+            buf.writeBoolean(packet.onlyOwnerCanOpen);
         }
 
         public static SyncOwnersPacket decode(FriendlyByteBuf buf) {
@@ -123,8 +132,9 @@ public final class SellBoxNetwork {
             int saleIntervalTicks = buf.readVarInt();
             boolean showActionBarNotification = buf.readBoolean();
             boolean showChatNotification = buf.readBoolean();
+            boolean onlyOwnerCanOpen = buf.readBoolean();
             return new SyncOwnersPacket(pos, owner, ownerName, sellMode, saleIntervalTicks,
-                    showActionBarNotification, showChatNotification);
+                    showActionBarNotification, showChatNotification, onlyOwnerCanOpen);
         }
 
         public static void handle(SyncOwnersPacket packet, Supplier<NetworkEvent.Context> supplier) {
@@ -149,7 +159,7 @@ public final class SellBoxNetwork {
             if (sender != null) {
                 context.enqueueWork(() -> {
                     if (!(sender.serverLevel().getBlockEntity(packet.pos) instanceof SellBoxBlockEntity box)) return;
-                    if (!box.stillValid(sender)) return;
+                    if (!box.stillValid(sender) || !box.canOpen(sender)) return;
                     box.setOwner(sender.getUUID(), sender.getGameProfile().getName());
                     broadcastOwner(sender.server, box);
                 });
@@ -159,18 +169,20 @@ public final class SellBoxNetwork {
     }
 
     public record SetSettingsPacket(BlockPos pos, SellMode mode, int intervalTicks,
-                                    boolean showActionBarNotification, boolean showChatNotification) {
+                                    boolean showActionBarNotification, boolean showChatNotification,
+                                    boolean onlyOwnerCanOpen) {
         public static void encode(SetSettingsPacket packet, FriendlyByteBuf buf) {
             buf.writeBlockPos(packet.pos);
             buf.writeEnum(packet.mode);
             buf.writeVarInt(packet.intervalTicks);
             buf.writeBoolean(packet.showActionBarNotification);
             buf.writeBoolean(packet.showChatNotification);
+            buf.writeBoolean(packet.onlyOwnerCanOpen);
         }
 
         public static SetSettingsPacket decode(FriendlyByteBuf buf) {
             return new SetSettingsPacket(buf.readBlockPos(), buf.readEnum(SellMode.class), buf.readVarInt(),
-                    buf.readBoolean(), buf.readBoolean());
+                    buf.readBoolean(), buf.readBoolean(), buf.readBoolean());
         }
 
         public static void handle(SetSettingsPacket packet, Supplier<NetworkEvent.Context> supplier) {
@@ -179,12 +191,14 @@ public final class SellBoxNetwork {
             if (sender != null) {
                 context.enqueueWork(() -> {
                     if (!(sender.serverLevel().getBlockEntity(packet.pos) instanceof SellBoxBlockEntity box)
-                            || !box.stillValid(sender) || !box.canEditOwner(sender)) return;
+                            || !box.stillValid(sender) || !box.canEditOwner(sender)
+                            || !box.canOpen(sender)) return;
                     SellMode previousMode = box.sellMode();
                     boolean menuStillOpen = sender.containerMenu instanceof SellBoxMenu menu
                             && menu.pos().equals(packet.pos());
                     box.setSettings(packet.mode, packet.intervalTicks,
-                            packet.showActionBarNotification, packet.showChatNotification);
+                            packet.showActionBarNotification, packet.showChatNotification,
+                            packet.onlyOwnerCanOpen);
                     // The server can close the menu before this client settings packet arrives.
                     // In that case the old mode missed the close event, so sell immediately
                     // when this save changes the box into GUI-close selling mode.
@@ -201,7 +215,8 @@ public final class SellBoxNetwork {
 
     public record SyncPricesPacket(String defaultCurrency, List<PriceRule> rules,
                                    boolean showPriceTooltip, boolean hasDynamicPriceFunction,
-                                   Map<String, String> currencyDisplayNames) {
+                                   Map<String, String> currencyDisplayNames,
+                                   List<String> priceTooltipCurrencies) {
         public static void encode(SyncPricesPacket packet, FriendlyByteBuf buf) {
             buf.writeUtf(packet.defaultCurrency, 64);
             buf.writeBoolean(packet.showPriceTooltip);
@@ -210,6 +225,10 @@ public final class SellBoxNetwork {
             for (var entry : packet.currencyDisplayNames.entrySet()) {
                 buf.writeUtf(entry.getKey(), 64);
                 buf.writeUtf(entry.getValue(), 128);
+            }
+            buf.writeVarInt(packet.priceTooltipCurrencies.size());
+            for (String currency : packet.priceTooltipCurrencies) {
+                buf.writeUtf(currency, 64);
             }
             buf.writeVarInt(packet.rules.size());
             for (PriceRule rule : packet.rules) {
@@ -231,6 +250,11 @@ public final class SellBoxNetwork {
             for (int i = 0; i < nameCount; i++) {
                 currencyDisplayNames.put(buf.readUtf(64), buf.readUtf(128));
             }
+            int tooltipCurrencyCount = Math.min(buf.readVarInt(), 10000);
+            List<String> priceTooltipCurrencies = new ArrayList<>();
+            for (int i = 0; i < tooltipCurrencyCount; i++) {
+                priceTooltipCurrencies.add(buf.readUtf(64));
+            }
             int count = Math.min(buf.readVarInt(), 100000);
             List<PriceRule> rules = new ArrayList<>();
             for (int i = 0; i < count; i++) {
@@ -243,7 +267,7 @@ public final class SellBoxNetwork {
                 rules.add(new PriceRule(item, nbt, value, ruleCurrency, kind, kubeJs));
             }
             return new SyncPricesPacket(currency, rules, showPriceTooltip,
-                    hasDynamicPriceFunction, currencyDisplayNames);
+                    hasDynamicPriceFunction, currencyDisplayNames, priceTooltipCurrencies);
         }
 
         public static void handle(SyncPricesPacket packet, Supplier<NetworkEvent.Context> supplier) {

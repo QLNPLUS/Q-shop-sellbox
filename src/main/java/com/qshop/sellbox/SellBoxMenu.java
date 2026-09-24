@@ -21,6 +21,7 @@ public final class SellBoxMenu extends AbstractContainerMenu {
     private int saleIntervalTicks = 1200;
     private boolean showActionBarNotification = true;
     private boolean showChatNotification = true;
+    private boolean onlyOwnerCanOpen;
 
     public SellBoxMenu(int id, Inventory inventory, FriendlyByteBuf data) {
         this(id, inventory, readClientData(inventory, data));
@@ -46,6 +47,7 @@ public final class SellBoxMenu extends AbstractContainerMenu {
         this.saleIntervalTicks = box.saleIntervalTicks();
         this.showActionBarNotification = box.showActionBarNotification();
         this.showChatNotification = box.showChatNotification();
+        this.onlyOwnerCanOpen = box.onlyOwnerCanOpen();
     }
 
     private SellBoxMenu(int id, Inventory inventory, BlockPos pos, IItemHandler handler) {
@@ -76,23 +78,26 @@ public final class SellBoxMenu extends AbstractContainerMenu {
     public int saleIntervalTicks() { return saleIntervalTicks; }
     public boolean showActionBarNotification() { return showActionBarNotification; }
     public boolean showChatNotification() { return showChatNotification; }
+    public boolean onlyOwnerCanOpen() { return onlyOwnerCanOpen; }
     public void setOwnerData(UUID owner, String ownerName) {
         this.owner = owner;
         this.ownerName = ownerName == null ? "" : ownerName;
     }
 
     public void setSettingsData(SellMode mode, int intervalTicks,
-                                boolean showActionBarNotification, boolean showChatNotification) {
+                                boolean showActionBarNotification, boolean showChatNotification,
+                                boolean onlyOwnerCanOpen) {
         this.sellMode = mode == null ? SellMode.INTERVAL : mode;
         this.saleIntervalTicks = Math.max(20, Math.min(intervalTicks, SellBoxBlockEntity.MAX_INTERVAL_TICKS));
         this.showActionBarNotification = showActionBarNotification;
         this.showChatNotification = showChatNotification;
+        this.onlyOwnerCanOpen = onlyOwnerCanOpen;
     }
 
     @Override
     public boolean stillValid(Player player) {
         return player.level().getBlockEntity(pos) instanceof SellBoxBlockEntity box
-                && box.stillValid(player);
+                && box.stillValid(player) && box.canOpen(player);
     }
 
     @Override
