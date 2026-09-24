@@ -22,6 +22,7 @@ env:
 
 jobs:
   publish:
+    if: ${{ github.event_name == 'workflow_dispatch' || endsWith(github.event.release.tag_name, '-neoforge-1.21.1') }}
     runs-on: ubuntu-latest
 
     steps:
@@ -56,7 +57,10 @@ jobs:
       - name: Prepare CurseForge version
         env:
           RELEASE_VERSION: ${{ env.RELEASE_VERSION }}
-        run: echo "CURSEFORGE_VERSION=${RELEASE_VERSION#v}" >> "$GITHUB_ENV"
+        run: |
+          version="${RELEASE_VERSION#v}"
+          version="$(printf '%s' "$version" | sed -E 's/-(forge|neoforge)-.*$//')"
+          echo "CURSEFORGE_VERSION=$version" >> "$GITHUB_ENV"
 
       - name: Validate CurseForge configuration
         env:
@@ -90,6 +94,7 @@ jobs:
           RELEASE_VERSION: ${{ env.RELEASE_VERSION }}
         run: |
           version="${RELEASE_VERSION#v}"
+          version="$(printf '%s' "$version" | sed -E 's/-(forge|neoforge)-.*$//')"
           awk -v version="$version" '
             /^##[[:space:]]+/ {
               heading = $2
