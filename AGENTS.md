@@ -14,7 +14,7 @@
 
 - 主工作树（持有 `.git` **目录**）是 `D:\projects\q_shop_sellbox\forge-1.20.1`；另两条是它的 linked worktree（`.git` 是**文件**，指向 `forge-1.20.1\.git\worktrees\...`）。三者共享同一个对象库，因此在一个 worktree 里 commit 的提交，可直接在另一个 worktree 里 `cherry-pick`，无需 fetch。
 - 唯一远程是 `origin`（`https://github.com/QLNPLUS/Q-shop-sellbox.git`）。本仓库**没有 fork 远程**，推送目标就是 `origin`。
-- 三条分支均 tracking **同名**远程分支（`neoforge-1.26.1.2` 目前仅存在于本地，需要时用 `git push -u origin neoforge-1.26.1.2` 建立）。`origin/HEAD` 与 GitHub 默认分支都是 **`forge-1.20.1`**（2026-09-13 由 `main` 改名而来；旧名 `main`、遗留名 `neoforge` 已不再使用）。
+- 三条分支均 tracking **同名**远程分支，包括已建立的 `origin/neoforge-1.26.1.2`。`origin/HEAD` 与 GitHub 默认分支都是 **`forge-1.20.1`**（2026-09-13 由 `main` 改名而来；旧名 `main`、遗留名 `neoforge` 已不再使用）。
 - 目录名、本地分支名、远程分支名三者一致。但仍建议用 `git rev-parse --abbrev-ref HEAD` 判定当前分支，不要相信目录名。
 - 三条分支均已漂移：分家于 `3fb0101 (Release QShop Sell Box 1.0.1)`，此后 `forge-1.20.1` 独有 13 个提交、`neoforge-1.21.1` 独有 11 个提交；**`neoforge-1.26.1.2` 于 `d4e29ae (1.5.0)` 从 `neoforge-1.21.1` 分出**（同加载器基线：实测 1.21.1 → 26.1.2 改动 1743 行，而 1.20.1 → 26.1.2 需 2933 行）。
 
@@ -163,4 +163,4 @@ git tag 是仓库级唯一的，而本仓库是锁步发布 —— 只打一个 
 4. **Forge 的 `runServer` 加载不了 QShop 的 Forge 生产 jar（既有问题，与 QShop 版本无关）**：`run\mods\` 里放 QShop 的 forge 产物（1.4.0、1.7.0 均实测）会在 `common_setup` 抛 `NoSuchMethodError`，一次一个方法（1.7.0 是 `SoundEvent.m_262824_`，1.4.0 是 `Commands.m_82127_`）。原因是 Forge 生产 jar 用 SRG 名、dev 运行时按官方名解析，而这些方法的 SRG id 随 Forge 版本重新分配。**NeoForge 侧不受影响**（其生产 jar 不做 SRG 重映射），所以 `neoforge-1.21.1` 的服务端冒烟能通过。要让 Forge 冒烟也通过，需要 QShop 提供未 reobf 的 dev 产物，或把 QShop 的 classes 直接放进 run classpath。
 5. **本机 Mojang 主机不可达**：`piston-meta.mojang.com` / `libraries.minecraft.net` 连不通 → ForgeGradle 的 `downloadMCMeta`、`downloadAssets`、`extractNatives` 会失败或挂起，且 `--offline` 对它们无效（它们不走 Gradle 的离线开关）。绕过方式：`-x downloadMCMeta -x downloadAssets`，并先把 `%USERPROFILE%\.gradle\caches\forge_gradle\minecraft_repo\versions\1.20.1\version.json` 复制到 `build\downloadMCMeta\version.json` 满足 `extractNatives` 的输入校验。NeoForge 侧用 neoformruntime 缓存，`--offline` 即可跑通。
 6. **`neoforge-1.26.1.2` 的客户端渲染修过一轮，但仍需一次真实客户端复测**：客户端实测发现三个问题，均已修复（提交 `64b76e0`）——① 九宫格内拉伸沿用了 1.21.1 的参数顺序，按钮边框碎裂（新签名 UV 在前，见上表）；② 头像 blit 同样顺序错误，且默认皮肤 `textures/entity/steve.png` 在 26.x 已删除（改为 `entity/player/wide/steve.png`）；③ 缺 `assets/qshop_sellbox/items/sell_box.json` 客户端物品定义，物品图标完全不渲染。`tools\verify-release-jars.ps1` 已加入"物品定义存在且能解析到产物内的模型"这一项。**修复后的画面仍需在一次真实客户端里确认** —— 按 `forge-gui-layering` skill，编译通过与静态核验都不能作为绘制正确的证据。复测重点：按钮/输入框/复选框边框（九宫格）、面板与 owner 背景、页签贴图与物品图标、头像皮肤、tooltip 位置、物品页↔设置页切换时的遮挡关系。
-7. **`neoforge-1.26.1.2` 仅存在于本地**：远端尚无该分支，需要时 `git push -u origin neoforge-1.26.1.2`。在推送之前 `origin` 上的三分支 CI 契约只覆盖前两条。
+7. **`neoforge-1.26.1.2` 已存在于远端并 tracking `origin/neoforge-1.26.1.2`**。主分支发布工作流包含该版本的发布 job；如果新增或移除版本分支，应同步更新这条 CI 契约。

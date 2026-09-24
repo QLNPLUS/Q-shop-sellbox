@@ -4,6 +4,14 @@ All notable changes to QShop Sell Box are documented here.
 
 Release notes are grouped by Minecraft loader when a release supports both Forge and NeoForge.
 
+## [1.6.0] - 2026-09-24
+
+### Added
+
+- Added a per-container option that restricts opening to the claimed owner.
+- Added currency ID filtering for item price tooltips; an empty `priceTooltipCurrencies` list shows all currencies.
+- Updated the default settings layout to match the supplied layout configuration.
+
 ## [1.5.0] - 2026-09-06
 
 ### Forge 1.20.1
